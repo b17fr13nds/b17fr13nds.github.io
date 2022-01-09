@@ -29,48 +29,60 @@
 <p><em>Note that this is only a little reference that I initially created for myself. I decided to publish it for those, who want to have an overview of the fundamentals. If you spot any mistakes or if you think something should be added, please reach me on discord (<code>BitFriends#2070</code>). I used some pictures from other people because this was only a reference for me. The people who created the pictures are amazing and should feel honored :)</em></p>
 <h2 id="table-of-contents">table of contents</h2>
 <ul>
-<li>computer components are their functionalities
-&ndash; the cpu
-&ndash; the mmu
-&ndash; the ram
-&ndash; the bus</li>
-<li>the x86(-64) architecture
-&ndash; overview
-&ndash; data
-&ndash; segmentation
-&ndash; CPU registers
-&ndash; call stack
-&ndash; privilege/protection rings</li>
-<li>Linux operating system and kernel
-&ndash; overview
-&ndash; the kernel
-&ndash; syscalls and interrupts
-&ndash; modern exploit mitigations (kernel space)
-&ndash; Linux calling convention</li>
-<li>ELF file format (Linux)
-&ndash; overview
-&ndash; structure
-&ndash; how an elf file is executed
-&ndash; static vs dynamic binaries
-&ndash; shared libraries
-&ndash; modern exploit mitigations (userspace)
-&ndash; the linker, the plt and the got</li>
-<li>Windows operating system and kernel
-&ndash; overview
-&ndash; the kernel
-&ndash; syscalls and interrupts
-&ndash; modern exploit mitigations (kernel space)
-&ndash; Windows calling convention</li>
-<li>PE file format (Windows)
-&ndash; overview
-&ndash; structure
-&ndash; modern exploit mitigations (userspace)</li>
+<li>computer components are their functionalities</li>
+</ul>
+<p>&ndash; the cpu</p>
+<p>&ndash; the mmu</p>
+<p>&ndash; the ram</p>
+<p>&ndash; the bus</p>
+<ul>
+<li>the x86(-64) architecture</li>
+</ul>
+<p>&ndash; overview</p>
+<p>&ndash; data</p>
+<p>&ndash; segmentation</p>
+<p>&ndash; CPU registers</p>
+<p>&ndash; call stack</p>
+<p>&ndash; privilege/protection rings</p>
+<ul>
+<li>Linux operating system and kernel</li>
+</ul>
+<p>&ndash; overview</p>
+<p>&ndash; the kernel</p>
+<p>&ndash; syscalls and interrupts</p>
+<p>&ndash; modern exploit mitigations (kernel space)</p>
+<p>&ndash; Linux calling convention</p>
+<ul>
+<li>ELF file format (Linux)</li>
+</ul>
+<p>&ndash; overview</p>
+<p>&ndash; structure</p>
+<p>&ndash; how an elf file is executed</p>
+<p>&ndash; static vs dynamic binaries</p>
+<p>&ndash; shared libraries</p>
+<p>&ndash; modern exploit mitigations (userspace)</p>
+<p>&ndash; the linker, the plt and the got</p>
+<ul>
+<li>Windows operating system and kernel</li>
+</ul>
+<p>&ndash; overview</p>
+<p>&ndash; the kernel</p>
+<p>&ndash; syscalls and interrupts</p>
+<p>&ndash; modern exploit mitigations (kernel space)</p>
+<p>&ndash; Windows calling convention</p>
+<ul>
+<li>PE file format (Windows)</li>
+</ul>
+<p>&ndash; overview</p>
+<p>&ndash; structure</p>
+<p>&ndash; modern exploit mitigations (userspace)</p>
+<ul>
 <li>sources</li>
 </ul>
 <h2 id="computer-components">Computer components</h2>
 <h3 id="cpu-central-processing-unit---assuming-it-has-x86-architecture">CPU (Central Processing Unit - assuming it has x86 architecture)</h3>
-<p>It is a little electronic device that executes instructions (machine code). The CPU can do logic, arithmetic, controlling and input/output operations which are specified by the machine code instructions. The CPU is divided into units, each of them associated with specific tasks. The machine code is located in the main memory (RAM) and secondary memory. The CPU also has registers that are like global variables. They are locations in the CPU that can be used to store small amounts of data. The size of the registers depends on the processor architecture and generation.  The CPU cache is used by the CPU to save resources. It is closer to the CPU than the main memory and it stores copied data which is more frequently used. Most CPUs have a hierarchy of multiple cache levels, in most cases L1, L2, and L3. While every CPU core has its own L1 and L2 cache, the L3 cache is always shared between them.
-<img src="http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg" alt="CPU"></p>
+<p>It is a little electronic device that executes instructions (machine code). The CPU can do logic, arithmetic, controlling and input/output operations which are specified by the machine code instructions. The CPU is divided into units, each of them associated with specific tasks. The machine code is located in the main memory (RAM) and secondary memory. The CPU also has registers that are like global variables. They are locations in the CPU that can be used to store small amounts of data. The size of the registers depends on the processor architecture and generation.  The CPU cache is used by the CPU to save resources. It is closer to the CPU than the main memory and it stores copied data which is more frequently used. Most CPUs have a hierarchy of multiple cache levels, in most cases L1, L2, and L3. While every CPU core has its own L1 and L2 cache, the L3 cache is always shared between them.</p>
+<p><img src="http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg" alt="CPU"></p>
 <h3 id="ram-random-access-memory--virtual-memory">RAM (Random Access Memory) &amp; Virtual Memory</h3>
 <p>The ram is our main memory. It is a device where machine code and other data are stored. If we have a process, its code and most other data are in memory. If we have multiple programs running, using physical memory alone would be inefficient and expensive. Also, you don&rsquo;t want your program to interact with the hardware directly. Instead, it should think, that it has access to all available memory. Mainly because of that reason, every process has its own memory (called virtual memory), while the process can&rsquo;t access the virtual memory of another process. Virtual memory is partially in the physical address space and some fragments are in inactive/secondary memory, which form a range of continuous addresses. Address spaces that are more frequently used get more main memory than those that aren&rsquo;t read or written that often. The operating system tries to effectively move less frequently used data into secondary memory, which is known as swapping. Also, big parts of the kernel are mapped to each program&rsquo;s virtual address space (not directly accessible). There is also data in the kernel which is process-specific. This data is not shared between processes, instead, each has its unique data.</p>
 <h3 id="mmu">MMU</h3>
@@ -86,32 +98,38 @@
 <h3 id="processor-modes-8080---x86-64">Processor modes (8080 - x86-64)</h3>
 <p>Processor modes are various ways how the processor creates an operating environment. The processor mode controls how the processor manages the system memory, the tasks that use it, registers, etc. I listed the most important ones, starting with older ones.</p>
 <ul>
-<li>real mode flat model (unreal mode)
-&ndash; 16-bit architecture
-&ndash; CPU can only access 64K at a time
-&ndash; your program and its data must exist within a 64K block of memory
-&ndash; segment registers are set to the beginning of the memory block by the OS. They won&rsquo;t change as long as the program is running
-&ndash; the data of your program isn&rsquo;t really divided into segments
-&ndash; it is using 16-bit addresses</li>
-<li>real mode segmented model
-&ndash; 16-bit architecture
-&ndash; CPU can access 1MB
-&ndash; your program and its data can use the full 1MB of memory
-&ndash; the programmer has to set the segment registers
-&ndash; the data of your program is divided into segments
-&ndash; it is using 20-bit addresses. You can access data with <code>segment:offset</code>, having them stored in two different registers. You can also use <code>offset</code> only, but you can&rsquo;t access data that are at a memory location higher than <code>0xffff</code>.</li>
-<li>protected mode
-&ndash; 32-bit architecture
-&ndash; CPU can access over 4GB
-&ndash; your program is given a 4GB block of memory
-&ndash; the segment registers are managed by the OS and cannot be changed. Their new job is to locate the &ldquo;flat&rdquo; segment in virtual memory.
-&ndash; 32-bit addresses are used</li>
+<li>real mode flat model (unreal mode)</li>
+</ul>
+<p>&ndash; 16-bit architecture</p>
+<p>&ndash; CPU can only access 64K at a time</p>
+<p>&ndash; your program and its data must exist within a 64K block of memory</p>
+<p>&ndash; segment registers are set to the beginning of the memory block by the OS. They won&rsquo;t change as long as the program is running</p>
+<p>&ndash; the data of your program isn&rsquo;t really divided into segments</p>
+<p>&ndash; it is using 16-bit addresses</p>
+<ul>
+<li>real mode segmented model</li>
+</ul>
+<p>&ndash; 16-bit architecture</p>
+<p>&ndash; CPU can access 1MB</p>
+<p>&ndash; your program and its data can use the full 1MB of memory</p>
+<p>&ndash; the programmer has to set the segment registers</p>
+<p>&ndash; the data of your program is divided into segments</p>
+<p>&ndash; it is using 20-bit addresses. You can access data with <code>segment:offset</code>, having them stored in two different registers. You can also use <code>offset</code> only, but you can&rsquo;t access data that are at a memory location higher than <code>0xffff</code>.</p>
+<ul>
+<li>protected mode</li>
+</ul>
+<p>&ndash; 32-bit architecture</p>
+<p>&ndash; CPU can access over 4GB</p>
+<p>&ndash; your program is given a 4GB block of memory</p>
+<p>&ndash; the segment registers are managed by the OS and cannot be changed. Their new job is to locate the &ldquo;flat&rdquo; segment in virtual memory.</p>
+<p>&ndash; 32-bit addresses are used</p>
+<ul>
 <li>long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed</li>
 </ul>
 <h5 id="_for-compatibility-reasons-modern-cpus-can-switch-into-other-older-processor-modes_"><em>for compatibility reasons, modern CPUs can switch into other (older) processor modes</em></h5>
 <h3 id="memory-segmentation">Memory segmentation</h3>
-<p>Memory segmentation is an operating system memory management technique of division of a computer&rsquo;s primary memory into segments or sections. Talking of protected and long mode, you know that every program has its own virtual address space. Inside that is its data and code. The data and code are split into segments (an area in virtual memory for computer use), which are sometimes divided again into sections that are for more specific use (later more). For example, there is the <code>text</code> segment, where your code is in. The <code>data</code> and <code>bss</code> segments are for data, to be more precise, the <code>data</code> is for initialized, and the <code>bss</code> is for uninitialized variables. The <code>heap</code> segment is also used for data. But it is dynamic memory, which means that you can request and release memory from the heap segment. Last but not least there is the <code>stack segment</code> or only <code>stack</code>, which is also used to store data, especially local variables. It is like a real stack, where you can put something on top of it (called push-operation) and remove something from the top (called pop-operation). You cannot push or pop something from the bottom of the stack which doesn&rsquo;t work in real life. either. I will explain later when what is used. This is how it would look like:
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg" alt="Segments"></p>
+<p>Memory segmentation is an operating system memory management technique of division of a computer&rsquo;s primary memory into segments or sections. Talking of protected and long mode, you know that every program has its own virtual address space. Inside that is its data and code. The data and code are split into segments (an area in virtual memory for computer use), which are sometimes divided again into sections that are for more specific use (later more). For example, there is the <code>text</code> segment, where your code is in. The <code>data</code> and <code>bss</code> segments are for data, to be more precise, the <code>data</code> is for initialized, and the <code>bss</code> is for uninitialized variables. The <code>heap</code> segment is also used for data. But it is dynamic memory, which means that you can request and release memory from the heap segment. Last but not least there is the <code>stack segment</code> or only <code>stack</code>, which is also used to store data, especially local variables. It is like a real stack, where you can put something on top of it (called push-operation) and remove something from the top (called pop-operation). You cannot push or pop something from the bottom of the stack which doesn&rsquo;t work in real life. either. I will explain later when what is used. This is how it would look like:</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg" alt="Segments"></p>
 <h3 id="cpu-registers">CPU registers</h3>
 <h5 id="the-most-important-ones">The most important ones:</h5>
 <h1 id="heading"></h1>
@@ -161,14 +179,10 @@
 <td>-</td>
 <td>zmm0, zmm1, zmm2, &hellip;</td>
 </tr>
-<tr>
-<td>* some registers are only on specific architectures present</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
 </tbody>
 </table>
+<h1 id="heading-1"></h1>
+<p>* some registers are only on specific architectures present</p>
 <p>Most registers are for general use, however, there is the register <code>rbp</code>/<code>ebp</code>/<code>bp</code> (frame/base pointer - points to the current stack frame), <code>rsp</code>/<code>esp</code>/<code>sp</code> (stack pointer - points on the top of the stack), and the <code>rip</code>/<code>eip</code>/<code>ip</code> (instruction pointer - points to the instruction which will be executed by the CPU). After the instruction was executed, the instruction pointer will be incremented to point to the next instruction, if no controlling/control transfer instruction was executed. More on the base pointer and the instruction pointer in the next chapter.</p>
 <h3 id="call-stack">Call stack</h3>
 <p>the call stack is an area on the stack for local variables and the return address of a function. These areas are called stackframes. The <code>rbp</code> register points to the current stack frame. After a <code>call</code> the return address is pushed onto the stack and it is jumped to the specified address. Then the function sets up its stack frame, saves <code>rbp</code>, and does its actual job. After that, the stack pointer and the base pointer are restored, and the <code>ret</code> instruction is executed. It pops the previously-stored return address into <code>rip</code> and continues execution there.</p>
@@ -268,10 +282,11 @@ Only called from userspace.</p>
 <p>Since 1999, the ELF file format is the standard executable format on Linux. It defines the structure of binaries, like how they have to look in memory. It allows the operating system to interpret those files.</p>
 <h3 id="structure">Structure</h3>
 <h6 id="here-you-can-see-the-structure-of-an-elf-file">Here you can see the structure of an elf file</h6>
-<h1 id="heading-1"></h1>
-<p>lower addresses
-<img src="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm" alt="ELF Structure">higher addresses</p>
 <h1 id="heading-2"></h1>
+<p>lower addresses</p>
+<p><img src="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm" alt="ELF Structure"></p>
+<p>higher addresses</p>
+<h1 id="heading-3"></h1>
 <p>The ELF header defines some basic data, like endianness, architecture, version, etc. The ELF header is 52 or 64 bytes long for 32-bit and 64-bit binaries respectively. The program header table tells the system how to create a process image and it specifies for example what needs to be loaded into memory and where. The section header table defines the sections. The segments contain information that is needed for runtime execution of the file, while sections contain important data for linking and relocation.</p>
 <h3 id="how-an-elf-file-is-executed">How an elf file is executed</h3>
 <p>If you execute an elf file, the kernel first checks the magic bytes (the identifier of an elf file) to check if the file is an elf file. Then the kernel gets the basic information of the elf header, like endianness, etc. From the program header, the kernel determines what segments need to be loaded. Then there is a virtual address space allocated for the process. The segments are created and the segment data is copied to the allocated space (from the file). Then the only thing that is left to do is to jump to the entry point of the program (where the code starts).</p>
@@ -296,19 +311,14 @@ Only called from userspace.</p>
 <td>relocating some data to read-only</td>
 <td>protection of buffer overflow</td>
 </tr>
-<tr>
-<td>* aslr and pie is managed by the kernel and the others by the compiler</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
 </tbody>
 </table>
+<p>* aslr and pie is managed by the kernel and the others by the compiler</p>
 <h3 id="the-linker-the-plt-and-the-got">The linker, the plt, and the got</h3>
 <p>The linker combines a number of object and archive files, relocates their data, and ties up symbol references. Usually, the last step in compiling a program is to run the linker. The linker makes use of the section header. If the binary is not static, it has to make use of shared libraries. Programs often use functions that are in shared libraries so they have to call them. But the address of the function is not always known (because of aslr) and may be different on other systems, so hard-coding the addresses is a bad idea. That is why there are <code>got</code> and <code>plt</code>. In the <code>got</code>, there are the addresses of some functions from the shared libraries which were resolved by the linker and needed by the program. It will also contain important addresses that will be used in the symbol resolution process.
 <em>The linker resolves the symbols from the shared libraries.</em>
-However, the program doesn&rsquo;t call the addresses in the <code>got</code> directly. There is the <code>plt</code> where some little functions responsible for each function in the shared libraries are in. They are called by the program and they are calling the actual functions from shared libraries. They also call the linker if the functions have not been resolved yet. When we run a program on Linux, as default behavior, the dynamic linker resolves references to symbols in the shared libraries only when it’s needed. In other words, the program doesn’t know the address of a specific function in a shared library, until this function is actually referenced. This process of resolving symbols in run-time is known as lazy binding. This amazing picture by syst3mfailure describes it pretty well:
-<img src="https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png" alt="linker"></p>
+However, the program doesn&rsquo;t call the addresses in the <code>got</code> directly. There is the <code>plt</code> where some little functions responsible for each function in the shared libraries are in. They are called by the program and they are calling the actual functions from shared libraries. They also call the linker if the functions have not been resolved yet. When we run a program on Linux, as default behavior, the dynamic linker resolves references to symbols in the shared libraries only when it’s needed. In other words, the program doesn’t know the address of a specific function in a shared library, until this function is actually referenced. This process of resolving symbols in run-time is known as lazy binding. This amazing picture by syst3mfailure describes it pretty well:</p>
+<p><img src="https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png" alt="linker"></p>
 <ul>
 <li>from the text section, the plt function for read is called</li>
 <li>from the plt it is jumped to the got. If the symbol has already been resolved, a libc address would be in it.</li>
@@ -379,9 +389,9 @@ However, the program doesn&rsquo;t call the addresses in the <code>got</code> di
 <p>The PE file format is the standard executable file format in Windows. It is based on the COFF file format which was used earlier.</p>
 <h3 id="structure-1">Structure</h3>
 <h6 id="here-you-can-see-the-structure-of-a-pe-file">Here you can see the structure of a pe file</h6>
-<p>lower addresses
-<img src="https://wiki.osdev.org/images/d/dd/PEFigure1.jpg" alt="pe">
-higher addresses</p>
+<p>lower addresses</p>
+<p><img src="https://wiki.osdev.org/images/d/dd/PEFigure1.jpg" alt="pe"></p>
+<p>higher addresses</p>
 <p>The DOS header is there for compatibility reasons. If we try to execute a pe from DOS on Windows, we get a notification that this application is for DOS. Same the other way around. The MS-DOS real-mode stub program displays this message. The PE header contains information that concerns the entire file. It consists of basic information, like the PE magic. The optional PE header follows directly after the standard PE header. Its size is specified in the PE header which you can also use to tell if the optional header exists. The magic code field can be used in conjunction with the machine type to see in the PE header to detect if the PE file is running on a compatible system. There are a few other useful memory-related variables including the size and virtual base of the code and data, as well as the application&rsquo;s version number, entry point, and how many directories there are. A PE file is made up of sections which consist of a name, offset within the file, virtual address to copy to, as well as the size of the section in the file and in virtual memory (which may differ, in which case the difference should be cleared 0s), and associated flags. Each section has an entry in the section header table.</p>
 <h3 id="modern-exploit-mitigation-features">Modern exploit mitigation features</h3>
 <table>
@@ -403,12 +413,12 @@ higher addresses</p>
 </tbody>
 </table>
 <h2 id="sources">Sources</h2>
-<p>Picture 1: <a href="http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg">http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg</a>
-Picture 2: <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png">https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png</a>
-Picture 3: <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg">https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg</a>
-Picture 4: <a href="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm">https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm</a>
-Picture 5: <a href="https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png">https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png</a>
-Picture 6: <a href="https://wiki.osdev.org/images/d/dd/PEFigure1.jpg">https://wiki.osdev.org/images/d/dd/PEFigure1.jpg</a></p>
+<p>Picture 1: <a href="http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg">http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg</a></p>
+<p>Picture 2: <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png">https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png</a></p>
+<p>Picture 3: <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg">https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg</a></p>
+<p>Picture 4: <a href="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm">https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm</a></p>
+<p>Picture 5: <a href="https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png">https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png</a></p>
+<p>Picture 6: <a href="https://wiki.osdev.org/images/d/dd/PEFigure1.jpg">https://wiki.osdev.org/images/d/dd/PEFigure1.jpg</a></p>
 </div>
 				
 			</article>
