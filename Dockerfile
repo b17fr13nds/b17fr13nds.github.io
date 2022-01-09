@@ -1,7 +1,7 @@
-from ubuntu:20.04
+FROM ubuntu:20.04
 
 RUN apt-get update
-RUN apt-get install -y go git
+RUN apt-get install -y golang git
 WORKDIR /root
 RUN git clone https://github.com/gohugoio/hugo.git
 WORKDIR /root/hugo
