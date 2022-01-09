@@ -36,6 +36,9 @@
 <p>&ndash; the ram</p>
 <p>&ndash; the bus</p>
 </li>
+</ul>
+<h1 id="heading"></h1>
+<ul>
 <li>
 <p>the x86(-64) architecture</p>
 <p>&ndash; overview</p>
@@ -45,6 +48,9 @@
 <p>&ndash; call stack</p>
 <p>&ndash; privilege/protection rings</p>
 </li>
+</ul>
+<h1 id="heading-1"></h1>
+<ul>
 <li>
 <p>Linux operating system and kernel</p>
 <p>&ndash; overview</p>
@@ -53,6 +59,9 @@
 <p>&ndash; modern exploit mitigations (kernel space)</p>
 <p>&ndash; Linux calling convention</p>
 </li>
+</ul>
+<h1 id="heading-2"></h1>
+<ul>
 <li>
 <p>ELF file format (Linux)</p>
 <p>&ndash; overview</p>
@@ -63,6 +72,9 @@
 <p>&ndash; modern exploit mitigations (userspace)</p>
 <p>&ndash; the linker, the plt and the got</p>
 </li>
+</ul>
+<h1 id="heading-3"></h1>
+<ul>
 <li>
 <p>Windows operating system and kernel</p>
 <p>&ndash; overview</p>
@@ -71,15 +83,19 @@
 <p>&ndash; modern exploit mitigations (kernel space)</p>
 <p>&ndash; Windows calling convention</p>
 </li>
+</ul>
+<h1 id="heading-4"></h1>
+<ul>
 <li>
 <p>PE file format (Windows)</p>
 <p>&ndash; overview</p>
 <p>&ndash; structure</p>
 <p>&ndash; modern exploit mitigations (userspace)</p>
 </li>
-<li>
-<p>sources</p>
-</li>
+</ul>
+<h1 id="heading-5"></h1>
+<ul>
+<li>sources</li>
 </ul>
 <h2 id="computer-components">Computer components</h2>
 <h3 id="cpu-central-processing-unit---assuming-it-has-x86-architecture">CPU (Central Processing Unit - assuming it has x86 architecture)</h3>
@@ -109,6 +125,9 @@
 <p>&ndash; the data of your program isn&rsquo;t really divided into segments</p>
 <p>&ndash; it is using 16-bit addresses</p>
 </li>
+</ul>
+<h1 id="heading-6"></h1>
+<ul>
 <li>
 <p>real mode segmented model</p>
 <p>&ndash; 16-bit architecture</p>
@@ -118,6 +137,9 @@
 <p>&ndash; the data of your program is divided into segments</p>
 <p>&ndash; it is using 20-bit addresses. You can access data with <code>segment:offset</code>, having them stored in two different registers. You can also use <code>offset</code> only, but you can&rsquo;t access data that are at a memory location higher than <code>0xffff</code>.</p>
 </li>
+</ul>
+<h1 id="heading-7"></h1>
+<ul>
 <li>
 <p>protected mode</p>
 <p>&ndash; 32-bit architecture</p>
@@ -126,9 +148,10 @@
 <p>&ndash; the segment registers are managed by the OS and cannot be changed. Their new job is to locate the &ldquo;flat&rdquo; segment in virtual memory.</p>
 <p>&ndash; 32-bit addresses are used</p>
 </li>
-<li>
-<p>long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed</p>
-</li>
+</ul>
+<h1 id="heading-8"></h1>
+<ul>
+<li>long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed</li>
 </ul>
 <h5 id="_for-compatibility-reasons-modern-cpus-can-switch-into-other-older-processor-modes_"><em>for compatibility reasons, modern CPUs can switch into other (older) processor modes</em></h5>
 <h3 id="memory-segmentation">Memory segmentation</h3>
@@ -136,7 +159,7 @@
 <p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg" alt="Segments"></p>
 <h3 id="cpu-registers">CPU registers</h3>
 <h5 id="the-most-important-ones">The most important ones:</h5>
-<h1 id="heading"></h1>
+<h1 id="heading-9"></h1>
 <table>
 <thead>
 <tr>
@@ -185,7 +208,7 @@
 </tr>
 </tbody>
 </table>
-<h1 id="heading-1"></h1>
+<h1 id="heading-10"></h1>
 <p>* some registers are only on specific architectures present</p>
 <p>Most registers are for general use, however, there is the register <code>rbp</code>/<code>ebp</code>/<code>bp</code> (frame/base pointer - points to the current stack frame), <code>rsp</code>/<code>esp</code>/<code>sp</code> (stack pointer - points on the top of the stack), and the <code>rip</code>/<code>eip</code>/<code>ip</code> (instruction pointer - points to the instruction which will be executed by the CPU). After the instruction was executed, the instruction pointer will be incremented to point to the next instruction, if no controlling/control transfer instruction was executed. More on the base pointer and the instruction pointer in the next chapter.</p>
 <h3 id="call-stack">Call stack</h3>
@@ -286,11 +309,11 @@ Only called from userspace.</p>
 <p>Since 1999, the ELF file format is the standard executable format on Linux. It defines the structure of binaries, like how they have to look in memory. It allows the operating system to interpret those files.</p>
 <h3 id="structure">Structure</h3>
 <h6 id="here-you-can-see-the-structure-of-an-elf-file">Here you can see the structure of an elf file</h6>
-<h1 id="heading-2"></h1>
+<h1 id="heading-11"></h1>
 <p>lower addresses</p>
 <p><img src="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm" alt="ELF Structure"></p>
 <p>higher addresses</p>
-<h1 id="heading-3"></h1>
+<h1 id="heading-12"></h1>
 <p>The ELF header defines some basic data, like endianness, architecture, version, etc. The ELF header is 52 or 64 bytes long for 32-bit and 64-bit binaries respectively. The program header table tells the system how to create a process image and it specifies for example what needs to be loaded into memory and where. The section header table defines the sections. The segments contain information that is needed for runtime execution of the file, while sections contain important data for linking and relocation.</p>
 <h3 id="how-an-elf-file-is-executed">How an elf file is executed</h3>
 <p>If you execute an elf file, the kernel first checks the magic bytes (the identifier of an elf file) to check if the file is an elf file. Then the kernel gets the basic information of the elf header, like endianness, etc. From the program header, the kernel determines what segments need to be loaded. Then there is a virtual address space allocated for the process. The segments are created and the segment data is copied to the allocated space (from the file). Then the only thing that is left to do is to jump to the entry point of the program (where the code starts).</p>
@@ -330,7 +353,7 @@ However, the program doesn&rsquo;t call the addresses in the <code>got</code> di
 </ul>
 <h2 id="the-windows-os-and-kernel">The Windows OS and kernel</h2>
 <h3 id="overview-3">Overview</h3>
-<p>Windows originally was a GUI for MS-DOS. It was created in 1985. Now it is the most popular operating system. The standard file format for executables is PE.</p>
+<p>Windows originally was a GUI for MS-DOS. It was created in 1985. Now it is arguably the most popular operating system. The standard file format for executables is PE.</p>
 <h3 id="the-windows-kernel">The Windows kernel</h3>
 <p>the base principle of how the windows kernel works is basically the same as the Linux kernel. The only difference is, that some device drivers or other kernel services can be in userspace too. That&rsquo;s why the Windows kernel is a hybrid kernel (a mixture of monolithic (kernel services in kernel space) and microkernel (kernel services in user space)).</p>
 <h3 id="syscalls-and-interrupts-1">Syscalls and interrupts</h3>
