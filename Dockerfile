@@ -14,8 +14,8 @@ WORKDIR /root
 RUN hugo new site website
 WORKDIR /root/website
 RUN git init
-RUN git submodule add https://github.com/alexandrevicenzi/soho.git themes/soho
-RUN echo theme = \"soho\" >> config.toml
+RUN git submodule add https://github.com/liuzc/LeaveIt.git themes/LeaveIt
+RUN echo theme = \"LeaveIt\" >> config.toml
 RUN hugo new posts/intro.md
 
 # to create static page: hugo -D

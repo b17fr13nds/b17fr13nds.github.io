@@ -1,18 +1,50 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <url>
-    <loc>https://b17fr13nds.github.io/</loc>
-    <lastmod>2022-01-09T16:12:16+00:00</lastmod>
-  </url><url>
-    <loc>https://b17fr13nds.github.io/posts/intro/</loc>
-    <lastmod>2022-01-09T16:12:16+00:00</lastmod>
-  </url><url>
-    <loc>https://b17fr13nds.github.io/posts/</loc>
-    <lastmod>2022-01-09T16:12:16+00:00</lastmod>
-  </url><url>
-    <loc>https://b17fr13nds.github.io/categories/</loc>
-  </url><url>
-    <loc>https://b17fr13nds.github.io/tags/</loc>
-  </url>
+  
+    <url>
+      <loc>http://example.org/posts/intro/</loc>
+      
+      <lastmod>2022-01-09T17:00:53+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://example.org/</loc>
+      
+      <lastmod>2022-01-09T17:00:53+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://example.org/posts/</loc>
+      
+      <lastmod>2022-01-09T17:00:53+00:00</lastmod>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://example.org/categories/</loc>
+      
+      
+      
+      
+    </url>
+  
+    <url>
+      <loc>http://example.org/tags/</loc>
+      
+      
+      
+      
+    </url>
+  
 </urlset>
