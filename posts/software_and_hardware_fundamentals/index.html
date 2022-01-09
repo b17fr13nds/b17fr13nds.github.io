@@ -29,91 +29,57 @@
 <p><em>Note that this is only a little reference that I initially created for myself. I decided to publish it for those, who want to have an overview of the fundamentals. If you spot any mistakes or if you think something should be added, please reach me on discord (<code>BitFriends#2070</code>). I used some pictures from other people because this was only a reference for me. The people who created the pictures are amazing and should feel honored :)</em></p>
 <h2 id="table-of-contents">table of contents</h2>
 <ul>
-<li>computer components are their functionalities</li>
-</ul>
-<h1 id="heading"></h1>
+<li>
+<p>computer components are their functionalities</p>
 <p>&ndash; the cpu</p>
-<h1 id="heading-1"></h1>
 <p>&ndash; the mmu</p>
-<h1 id="heading-2"></h1>
 <p>&ndash; the ram</p>
-<h1 id="heading-3"></h1>
 <p>&ndash; the bus</p>
-<h1 id="heading-4"></h1>
-<ul>
-<li>the x86(-64) architecture</li>
-</ul>
-<h1 id="heading-5"></h1>
+</li>
+<li>
+<p>the x86(-64) architecture</p>
 <p>&ndash; overview</p>
-<h1 id="heading-6"></h1>
 <p>&ndash; data</p>
-<h1 id="heading-7"></h1>
 <p>&ndash; segmentation</p>
-<h1 id="heading-8"></h1>
 <p>&ndash; CPU registers</p>
-<h1 id="heading-9"></h1>
 <p>&ndash; call stack</p>
-<h1 id="heading-10"></h1>
 <p>&ndash; privilege/protection rings</p>
-<h1 id="heading-11"></h1>
-<ul>
-<li>Linux operating system and kernel</li>
-</ul>
-<h1 id="heading-12"></h1>
+</li>
+<li>
+<p>Linux operating system and kernel</p>
 <p>&ndash; overview</p>
-<h1 id="heading-13"></h1>
 <p>&ndash; the kernel</p>
-<h1 id="heading-14"></h1>
 <p>&ndash; syscalls and interrupts</p>
-<h1 id="heading-15"></h1>
 <p>&ndash; modern exploit mitigations (kernel space)</p>
-<h1 id="heading-16"></h1>
 <p>&ndash; Linux calling convention</p>
-<h1 id="heading-17"></h1>
-<ul>
-<li>ELF file format (Linux)</li>
-</ul>
-<h1 id="heading-18"></h1>
+</li>
+<li>
+<p>ELF file format (Linux)</p>
 <p>&ndash; overview</p>
-<h1 id="heading-19"></h1>
 <p>&ndash; structure</p>
-<h1 id="heading-20"></h1>
 <p>&ndash; how an elf file is executed</p>
-<h1 id="heading-21"></h1>
 <p>&ndash; static vs dynamic binaries</p>
-<h1 id="heading-22"></h1>
 <p>&ndash; shared libraries</p>
-<h1 id="heading-23"></h1>
 <p>&ndash; modern exploit mitigations (userspace)</p>
-<h1 id="heading-24"></h1>
 <p>&ndash; the linker, the plt and the got</p>
-<h1 id="heading-25"></h1>
-<ul>
-<li>Windows operating system and kernel</li>
-</ul>
-<h1 id="heading-26"></h1>
+</li>
+<li>
+<p>Windows operating system and kernel</p>
 <p>&ndash; overview</p>
-<h1 id="heading-27"></h1>
 <p>&ndash; the kernel</p>
-<h1 id="heading-28"></h1>
 <p>&ndash; syscalls and interrupts</p>
-<h1 id="heading-29"></h1>
 <p>&ndash; modern exploit mitigations (kernel space)</p>
-<h1 id="heading-30"></h1>
 <p>&ndash; Windows calling convention</p>
-<h1 id="heading-31"></h1>
-<ul>
-<li>PE file format (Windows)</li>
-</ul>
-<h1 id="heading-32"></h1>
+</li>
+<li>
+<p>PE file format (Windows)</p>
 <p>&ndash; overview</p>
-<h1 id="heading-33"></h1>
 <p>&ndash; structure</p>
-<h1 id="heading-34"></h1>
 <p>&ndash; modern exploit mitigations (userspace)</p>
-<h1 id="heading-35"></h1>
-<ul>
-<li>sources</li>
+</li>
+<li>
+<p>sources</p>
+</li>
 </ul>
 <h2 id="computer-components">Computer components</h2>
 <h3 id="cpu-central-processing-unit---assuming-it-has-x86-architecture">CPU (Central Processing Unit - assuming it has x86 architecture)</h3>
@@ -134,33 +100,35 @@
 <h3 id="processor-modes-8080---x86-64">Processor modes (8080 - x86-64)</h3>
 <p>Processor modes are various ways how the processor creates an operating environment. The processor mode controls how the processor manages the system memory, the tasks that use it, registers, etc. I listed the most important ones, starting with older ones.</p>
 <ul>
-<li>real mode flat model (unreal mode)</li>
-</ul>
+<li>
+<p>real mode flat model (unreal mode)</p>
 <p>&ndash; 16-bit architecture</p>
 <p>&ndash; CPU can only access 64K at a time</p>
 <p>&ndash; your program and its data must exist within a 64K block of memory</p>
 <p>&ndash; segment registers are set to the beginning of the memory block by the OS. They won&rsquo;t change as long as the program is running</p>
 <p>&ndash; the data of your program isn&rsquo;t really divided into segments</p>
 <p>&ndash; it is using 16-bit addresses</p>
-<ul>
-<li>real mode segmented model</li>
-</ul>
+</li>
+<li>
+<p>real mode segmented model</p>
 <p>&ndash; 16-bit architecture</p>
 <p>&ndash; CPU can access 1MB</p>
 <p>&ndash; your program and its data can use the full 1MB of memory</p>
 <p>&ndash; the programmer has to set the segment registers</p>
 <p>&ndash; the data of your program is divided into segments</p>
 <p>&ndash; it is using 20-bit addresses. You can access data with <code>segment:offset</code>, having them stored in two different registers. You can also use <code>offset</code> only, but you can&rsquo;t access data that are at a memory location higher than <code>0xffff</code>.</p>
-<ul>
-<li>protected mode</li>
-</ul>
+</li>
+<li>
+<p>protected mode</p>
 <p>&ndash; 32-bit architecture</p>
 <p>&ndash; CPU can access over 4GB</p>
 <p>&ndash; your program is given a 4GB block of memory</p>
 <p>&ndash; the segment registers are managed by the OS and cannot be changed. Their new job is to locate the &ldquo;flat&rdquo; segment in virtual memory.</p>
 <p>&ndash; 32-bit addresses are used</p>
-<ul>
-<li>long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed</li>
+</li>
+<li>
+<p>long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed</p>
+</li>
 </ul>
 <h5 id="_for-compatibility-reasons-modern-cpus-can-switch-into-other-older-processor-modes_"><em>for compatibility reasons, modern CPUs can switch into other (older) processor modes</em></h5>
 <h3 id="memory-segmentation">Memory segmentation</h3>
@@ -168,7 +136,7 @@
 <p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg" alt="Segments"></p>
 <h3 id="cpu-registers">CPU registers</h3>
 <h5 id="the-most-important-ones">The most important ones:</h5>
-<h1 id="heading-36"></h1>
+<h1 id="heading"></h1>
 <table>
 <thead>
 <tr>
@@ -217,7 +185,7 @@
 </tr>
 </tbody>
 </table>
-<h1 id="heading-37"></h1>
+<h1 id="heading-1"></h1>
 <p>* some registers are only on specific architectures present</p>
 <p>Most registers are for general use, however, there is the register <code>rbp</code>/<code>ebp</code>/<code>bp</code> (frame/base pointer - points to the current stack frame), <code>rsp</code>/<code>esp</code>/<code>sp</code> (stack pointer - points on the top of the stack), and the <code>rip</code>/<code>eip</code>/<code>ip</code> (instruction pointer - points to the instruction which will be executed by the CPU). After the instruction was executed, the instruction pointer will be incremented to point to the next instruction, if no controlling/control transfer instruction was executed. More on the base pointer and the instruction pointer in the next chapter.</p>
 <h3 id="call-stack">Call stack</h3>
@@ -318,11 +286,11 @@ Only called from userspace.</p>
 <p>Since 1999, the ELF file format is the standard executable format on Linux. It defines the structure of binaries, like how they have to look in memory. It allows the operating system to interpret those files.</p>
 <h3 id="structure">Structure</h3>
 <h6 id="here-you-can-see-the-structure-of-an-elf-file">Here you can see the structure of an elf file</h6>
-<h1 id="heading-38"></h1>
+<h1 id="heading-2"></h1>
 <p>lower addresses</p>
 <p><img src="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm" alt="ELF Structure"></p>
 <p>higher addresses</p>
-<h1 id="heading-39"></h1>
+<h1 id="heading-3"></h1>
 <p>The ELF header defines some basic data, like endianness, architecture, version, etc. The ELF header is 52 or 64 bytes long for 32-bit and 64-bit binaries respectively. The program header table tells the system how to create a process image and it specifies for example what needs to be loaded into memory and where. The section header table defines the sections. The segments contain information that is needed for runtime execution of the file, while sections contain important data for linking and relocation.</p>
 <h3 id="how-an-elf-file-is-executed">How an elf file is executed</h3>
 <p>If you execute an elf file, the kernel first checks the magic bytes (the identifier of an elf file) to check if the file is an elf file. Then the kernel gets the basic information of the elf header, like endianness, etc. From the program header, the kernel determines what segments need to be loaded. Then there is a virtual address space allocated for the process. The segments are created and the segment data is copied to the allocated space (from the file). Then the only thing that is left to do is to jump to the entry point of the program (where the code starts).</p>
