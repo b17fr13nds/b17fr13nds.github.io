@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en-us">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#1b1b1b">
+	<title>software and hardware fundamentals | BitFriends&#39; blog</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+	<link rel="stylesheet" href="/css/bundle.css">
+	<link rel="icon" href="/icons/16.png" sizes="16x16" type="image/png">
+	<link rel="icon" href="/icons/32.png" sizes="32x32" type="image/png">
+		
+</head>
+<body class="body kind-page">
+	<header class="header">
+	<a class="logo" href="/">BitFriends&#39; blog</a>
+	
+</header>
+	<div class="primary">
+	
+	<main class="main">
+		
+		<div class="single block">
+			<article class="entry">
+				<h1 class="entry__title">software and hardware fundamentals</h1>
+				<div class="entry__content"><h1 id="hardware-and-software-fundamentals-overview">hardware and software fundamentals overview</h1>
+<p><em>Note that this is only a little reference that I initially created for myself. I decided to publish it for those, who want to have an overview of the fundamentals. If you spot any mistakes or if you think something should be added, please reach me on discord (<code>BitFriends#2070</code>). I used some pictures from other people because this was only a reference for me. The people who created the pictures are amazing and should feel honored :)</em></p>
+<h2 id="table-of-contents">table of contents</h2>
+<ul>
+<li>computer components are their functionalities
+&ndash; the cpu
+&ndash; the mmu
+&ndash; the ram
+&ndash; the bus</li>
+<li>the x86(-64) architecture
+&ndash; overview
+&ndash; data
+&ndash; segmentation
+&ndash; CPU registers
+&ndash; call stack
+&ndash; privilege/protection rings</li>
+<li>Linux operating system and kernel
+&ndash; overview
+&ndash; the kernel
+&ndash; syscalls and interrupts
+&ndash; modern exploit mitigations (kernel space)
+&ndash; Linux calling convention</li>
+<li>ELF file format (Linux)
+&ndash; overview
+&ndash; structure
+&ndash; how an elf file is executed
+&ndash; static vs dynamic binaries
+&ndash; shared libraries
+&ndash; modern exploit mitigations (userspace)
+&ndash; the linker, the plt and the got</li>
+<li>Windows operating system and kernel
+&ndash; overview
+&ndash; the kernel
+&ndash; syscalls and interrupts
+&ndash; modern exploit mitigations (kernel space)
+&ndash; Windows calling convention</li>
+<li>PE file format (Windows)
+&ndash; overview
+&ndash; structure
+&ndash; modern exploit mitigations (userspace)</li>
+<li>sources</li>
+</ul>
+<h2 id="computer-components">Computer components</h2>
+<h3 id="cpu-central-processing-unit---assuming-it-has-x86-architecture">CPU (Central Processing Unit - assuming it has x86 architecture)</h3>
+<p>It is a little electronic device that executes instructions (machine code). The CPU can do logic, arithmetic, controlling and input/output operations which are specified by the machine code instructions. The CPU is divided into units, each of them associated with specific tasks. The machine code is located in the main memory (RAM) and secondary memory. The CPU also has registers that are like global variables. They are locations in the CPU that can be used to store small amounts of data. The size of the registers depends on the processor architecture and generation.  The CPU cache is used by the CPU to save resources. It is closer to the CPU than the main memory and it stores copied data which is more frequently used. Most CPUs have a hierarchy of multiple cache levels, in most cases L1, L2, and L3. While every CPU core has its own L1 and L2 cache, the L3 cache is always shared between them.
+<img src="http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg" alt="CPU"></p>
+<h3 id="ram-random-access-memory--virtual-memory">RAM (Random Access Memory) &amp; Virtual Memory</h3>
+<p>The ram is our main memory. It is a device where machine code and other data are stored. If we have a process, its code and most other data are in memory. If we have multiple programs running, using physical memory alone would be inefficient and expensive. Also, you don&rsquo;t want your program to interact with the hardware directly. Instead, it should think, that it has access to all available memory. Mainly because of that reason, every process has its own memory (called virtual memory), while the process can&rsquo;t access the virtual memory of another process. Virtual memory is partially in the physical address space and some fragments are in inactive/secondary memory, which form a range of continuous addresses. Address spaces that are more frequently used get more main memory than those that aren&rsquo;t read or written that often. The operating system tries to effectively move less frequently used data into secondary memory, which is known as swapping. Also, big parts of the kernel are mapped to each program&rsquo;s virtual address space (not directly accessible). There is also data in the kernel which is process-specific. This data is not shared between processes, instead, each has its unique data.</p>
+<h3 id="mmu">MMU</h3>
+<p>The MMU is part of the CPU (CPU unit) and it&rsquo;s a computer hardware unit having all memory references passed through itself, primarily performing the translation of virtual memory addresses to physical addresses. Modern MMUs typically divide the virtual address space into pages (chunks of memory, typically 1KB). Most MMUs use an in-memory table of items called a page table (which is stored in kernel space of a program&rsquo;s virtual address space), containing one page table entry per page, to map virtual page numbers to physical page numbers in main memory. The MMU knows where the current page table of the process is because the address of it is stored in a CPU register. Simply said, the MMU is responsible to translate virtual addresses to physical addresses. They also have a cache called translation lookaside buffer.</p>
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png" alt="MMU"></p>
+<h3 id="bus">BUS</h3>
+<p>A bus is a communication system that transfers data between components inside a computer. An address bus is a bus that is used to specify a physical address. When a processor needs to read or write to a memory location, it specifies that memory location on the address bus with a physical address (data is sent on the data bus). Just imagine the data bus like a highway that transfers data. The location of what to read or write is specified on the address bus.</p>
+<h2 id="the-x86-architecture">The x86 architecture</h2>
+<h3 id="overview">Overview</h3>
+<p>Different CPUs may have different architectures. x86 is one of them. It was originally designed by intel. By today x86 and its extensions are still commonly used. The most popular example is x86-64.</p>
+<h3 id="data">Data</h3>
+<p>The x86 architecture is a CISC (Complex instruction set computer) architecture. Unlike RISC (Reduced instruction set computer) architectures, CISC computers can execute several more specialized low-level operations, while RISC is a computer with a small, highly optimized set of instructions. Data is stored in memory with little-endian order. The largest value for int, memory address, or register is 16-bit, 32-bit, or 64-bit, depending on the processor generation.</p>
+<h3 id="processor-modes-8080---x86-64">Processor modes (8080 - x86-64)</h3>
+<p>Processor modes are various ways how the processor creates an operating environment. The processor mode controls how the processor manages the system memory, the tasks that use it, registers, etc. I listed the most important ones, starting with older ones.</p>
+<ul>
+<li>real mode flat model (unreal mode)
+&ndash; 16-bit architecture
+&ndash; CPU can only access 64K at a time
+&ndash; your program and its data must exist within a 64K block of memory
+&ndash; segment registers are set to the beginning of the memory block by the OS. They won&rsquo;t change as long as the program is running
+&ndash; the data of your program isn&rsquo;t really divided into segments
+&ndash; it is using 16-bit addresses</li>
+<li>real mode segmented model
+&ndash; 16-bit architecture
+&ndash; CPU can access 1MB
+&ndash; your program and its data can use the full 1MB of memory
+&ndash; the programmer has to set the segment registers
+&ndash; the data of your program is divided into segments
+&ndash; it is using 20-bit addresses. You can access data with <code>segment:offset</code>, having them stored in two different registers. You can also use <code>offset</code> only, but you can&rsquo;t access data that are at a memory location higher than <code>0xffff</code>.</li>
+<li>protected mode
+&ndash; 32-bit architecture
+&ndash; CPU can access over 4GB
+&ndash; your program is given a 4GB block of memory
+&ndash; the segment registers are managed by the OS and cannot be changed. Their new job is to locate the &ldquo;flat&rdquo; segment in virtual memory.
+&ndash; 32-bit addresses are used</li>
+<li>long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed</li>
+</ul>
+<h5 id="_for-compatibility-reasons-modern-cpus-can-switch-into-other-older-processor-modes_"><em>for compatibility reasons, modern CPUs can switch into other (older) processor modes</em></h5>
+<h3 id="memory-segmentation">Memory segmentation</h3>
+<p>Memory segmentation is an operating system memory management technique of division of a computer&rsquo;s primary memory into segments or sections. Talking of protected and long mode, you know that every program has its own virtual address space. Inside that is its data and code. The data and code are split into segments (an area in virtual memory for computer use), which are sometimes divided again into sections that are for more specific use (later more). For example, there is the <code>text</code> segment, where your code is in. The <code>data</code> and <code>bss</code> segments are for data, to be more precise, the <code>data</code> is for initialized, and the <code>bss</code> is for uninitialized variables. The <code>heap</code> segment is also used for data. But it is dynamic memory, which means that you can request and release memory from the heap segment. Last but not least there is the <code>stack segment</code> or only <code>stack</code>, which is also used to store data, especially local variables. It is like a real stack, where you can put something on top of it (called push-operation) and remove something from the top (called pop-operation). You cannot push or pop something from the bottom of the stack which doesn&rsquo;t work in real life. either. I will explain later when what is used. This is how it would look like:
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg" alt="Segments"></p>
+<h3 id="cpu-registers">CPU registers</h3>
+<h5 id="the-most-important-ones">The most important ones:</h5>
+<h1 id="heading"></h1>
+<table>
+<thead>
+<tr>
+<th>Bits</th>
+<th>Stack-Pointer</th>
+<th>Frame-Pointer</th>
+<th>General purpose / other</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16</td>
+<td>sp</td>
+<td>bp</td>
+<td>ax, bx, cx, dx, &hellip;</td>
+</tr>
+<tr>
+<td>32</td>
+<td>esp</td>
+<td>ebp</td>
+<td>eax, ebx, ecx, edx, edi, esi, &hellip;</td>
+</tr>
+<tr>
+<td>64</td>
+<td>rsp</td>
+<td>rbp</td>
+<td>rax, rbx, rcx, rdx, rdi, rsi, &hellip;</td>
+</tr>
+<tr>
+<td>128</td>
+<td>-</td>
+<td>-</td>
+<td>xmm0, xmm1, xmm2, &hellip;</td>
+</tr>
+<tr>
+<td>256</td>
+<td>-</td>
+<td>-</td>
+<td>ymm0, ymm1, ymm2, &hellip;</td>
+</tr>
+<tr>
+<td>512</td>
+<td>-</td>
+<td>-</td>
+<td>zmm0, zmm1, zmm2, &hellip;</td>
+</tr>
+<tr>
+<td>* some registers are only on specific architectures present</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Most registers are for general use, however, there is the register <code>rbp</code>/<code>ebp</code>/<code>bp</code> (frame/base pointer - points to the current stack frame), <code>rsp</code>/<code>esp</code>/<code>sp</code> (stack pointer - points on the top of the stack), and the <code>rip</code>/<code>eip</code>/<code>ip</code> (instruction pointer - points to the instruction which will be executed by the CPU). After the instruction was executed, the instruction pointer will be incremented to point to the next instruction, if no controlling/control transfer instruction was executed. More on the base pointer and the instruction pointer in the next chapter.</p>
+<h3 id="call-stack">Call stack</h3>
+<p>the call stack is an area on the stack for local variables and the return address of a function. These areas are called stackframes. The <code>rbp</code> register points to the current stack frame. After a <code>call</code> the return address is pushed onto the stack and it is jumped to the specified address. Then the function sets up its stack frame, saves <code>rbp</code>, and does its actual job. After that, the stack pointer and the base pointer are restored, and the <code>ret</code> instruction is executed. It pops the previously-stored return address into <code>rip</code> and continues execution there.</p>
+<h3 id="cpu-protectionprivilege-rings">CPU protection/privilege rings</h3>
+<p>Computer operating systems provide different levels of access to resources. They are mechanisms to protect data and functionality from faults and malicious behavior. Rings are arranged in a hierarchy from most privileged (most trusted, usually numbered zero) to least privileged (least trusted, usually with the highest ring number). On most operating systems, Ring 0 is the level with the most privileges and interacts most directly with the physical hardware such as the CPU and memory (the kernel is in ring 0 of course). Normal applications are usually in the least privileged ring (on Linux in ring 3). In this state, the hardware is pretty much locked up. That&rsquo;s why there are syscalls and interrupts. With them you switch to ring 0 and changes to the hardware can be done.</p>
+<h2 id="the-linux-os-and-kernel">The Linux OS and kernel</h2>
+<h3 id="overview-1">Overview</h3>
+<p>Linux was released in 1991. It is a Unix-like operating system. That means that it is not derived from Unix, but it is similar. Linux itself is not an OS, instead, it&rsquo;s a kernel. Several Linux distributions are all based on the Linux kernel. The standard format for executables is ELF.</p>
+<h3 id="the-linux-kernel">The Linux kernel</h3>
+<p>The kernel in general is like a program that has full control of the operating system. The kernel is a bridge between the hardware and software. After the bootloader (which is responsible to boot the system) the kernel is the first program loaded on startup. It handles the rest of startup as well as memory and input/output (I/O) requests from software, translating them into data-processing instructions for the CPU. Linux is a monolithic kernel, which means that the kernel not only interacts with the CPU and memory but also has device drivers and other kernel services running in kernel space only (read further for the definition of kernel space). They are best at communicating with hardware and performing several tasks simultaneously. It is for this reason that processes here react at a fast rate. The kernel manages the hardware with interrupts. If we talk about the virtual memory of a program, we divide it into user space and kernel space. In userspace, there is the program code, the data of the program and shared libraries, etc. and in kernel space is data of the kernel. In general, in user space are all the programs and libraries and in kernel space is the whole kernel and its drivers and modules. This applies to Windows too (at least NT based)</p>
+<h3 id="syscalls-and-interrupts">Syscalls and interrupts</h3>
+<p>When the software or hardware wants to interface with the system, an interrupt is triggered (the hardware sends signals to the CPU through the bus, the software uses the <code>int</code> instruction), which interrupts the processor which does the same to the kernel. Interrupts are used for implementing device drivers or transitions between protected modes of operation, such as system calls. The interrupt handler saves the current system state and runs the to the interrupt associated interrupt handling code. After that, the interrupt handler restores the state as it was before the interrupt. When another process requests a service from the kernel, the process has to do a system call. Many different syscalls are doing different things. They are defined in the kernel and they do low-level operations. On 64-bit, they are triggered with a syscall instruction. Before that, the syscall number and the arguments for the syscall are stored in specific registers. When a syscall instruction is executed, the value from the <code>IA32_LSTAR</code> register (prepared on kernel boot, only accessible in kernel space) is moved into <code>rip</code> and jumped to that address (in kernel space). There the register which contains the syscall number is checked and it is jumped to the right syscall code (the address is in the syscall table). After the syscall is finished, you jump back to the instruction following the syscall instruction. Its address was saved earlier in <code>rcx</code>. On 32-bit, you use interrupts to jump to the code in kernel space (interrupt handling code) which executes the syscalls (you use <code>0x80</code>). The addresses of the interrupt handlers are stored in the interrupt vector table. Usually, a program does not use syscalls directly. Instead, wrappers from the shared libraries are used. But there are also other kernel functions, which can&rsquo;t be used by a normal application.</p>
+<h4 id="modern-exploit-mitigation-features-kernelspace">Modern exploit mitigation features (kernelspace)</h4>
+<table>
+<thead>
+<tr>
+<th>kernel access layout space randomization (kaslr)</th>
+<th>function granular kernel access layout space randomization (fgkaslr)</th>
+<th>supervisor mode execution protection (smep)</th>
+<th>supervisor mode access prevention (smap)</th>
+<th>kernel page table isolisation (kpti)</th>
+<th>kernel stack canaries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the kernel base address is randomized</td>
+<td>per-function randomization</td>
+<td>marking non-kernelspace pages as nonexecutable</td>
+<td>marking non-kernelspace pages as nonaccessible</td>
+<td>separation of user and kernelland pages</td>
+<td>stack-based buffer overflow protection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="linux-calling-convention">Linux calling convention</h3>
+<h4 id="x86">x86</h4>
+<blockquote>
+<p>32-bit SYSENTER entry.
+32-bit system calls through the VDSO&rsquo;s __kernel_vsyscall enter here
+if X86_FEATURE_SEP is available. This is the preferred system call
+entry on 32-bit systems.
+The SYSENTER instruction, in principle, should <em>only</em> occur in the
+VDSO. In practice, a small number of Android devices were shipped
+with a copy of Bionic that inlined a SYSENTER instruction. This
+never happened in any of Google&rsquo;s Bionic versions &ndash; it only happened
+in a narrow range of Intel-provided versions.
+SYSENTER loads <code>ss</code>, <code>esp</code>, <code>cs</code>, and <code>eip</code> from previously programmed MSRs.
+IF and VM in RFLAGS are cleared (IOW: interrupts are off).
+SYSENTER does not save anything on the stack,
+and does not save old <code>eip</code> (!!!), <code>esp</code>, or <code>eflags</code>.
+To avoid losing track of EFLAGS.VM (and thus potentially corrupting
+user and/or vm86 state), we explicitly disable the SYSENTER
+instruction in vm86 mode by reprogramming the MSRs.
+Arguments:
+<code>eax</code>: system call number
+<code>ebx</code>: arg1
+<code>ecx</code>: arg2
+<code>edx</code>: arg3
+<code>esi</code>: arg4
+<code>edi</code>: arg5
+<code>ebp</code>: user stack
+<code>[ebp+0x0]</code> arg6
+Note that for other function calls the arguments are stored on the stack. (conforming to C ABI)</p>
+</blockquote>
+<h4 id="x86_64">x86_64</h4>
+<blockquote>
+<p>64-bit SYSCALL instruction entry. Up to 6 arguments in registers.
+This is the only entry point used for 64-bit system calls. The
+hardware interface is reasonably well designed and the register to
+argument mapping Linux uses fits well with the registers that are
+available when SYSCALL is used.
+SYSCALL instructions can be found inlined in libc implementations as
+well as some other programs and libraries.  There are also a handful
+of SYSCALL instructions in the VDSO used, for example, as a
+clock_gettimeofday fallback.
+64-bit SYSCALL saves <code>rip</code> to <code>rcx</code>, clears rflags.RF, then saves <code>rflags</code> to <code>r11</code>,
+then loads new <code>ss</code>, <code>cs</code>, and <code>rip</code> from previously programmed MSRs (model-specific register).
+rflags gets masked by a value from another MSR (so CLD and CLAC
+are not needed). SYSCALL does not save anything on the stack
+and does not change <code>rsp</code>.
+Registers on entry:
+<code>rax</code>: system call number
+<code>rcx</code>: return address
+<code>r11</code>: saved rflags (note: r11 is callee-clobbered register in C ABI)
+<code>rdi</code>: arg0
+<code>rsi</code>: arg1
+<code>rdx</code>: arg2
+<code>r10</code>: arg3 (needs to be moved to <code>rcx</code> to conform to C ABI)
+<code>r8</code>: arg4
+<code>r9</code>: arg5
+(note: <code>r12</code>-<code>r15</code>, <code>rbp</code>, <code>rbx</code> are callee-preserved in C ABI)
+Only called from userspace.</p>
+</blockquote>
+<h2 id="elf-file-format">ELF file format</h2>
+<h3 id="overview-2">Overview</h3>
+<p>Since 1999, the ELF file format is the standard executable format on Linux. It defines the structure of binaries, like how they have to look in memory. It allows the operating system to interpret those files.</p>
+<h3 id="structure">Structure</h3>
+<h6 id="here-you-can-see-the-structure-of-an-elf-file">Here you can see the structure of an elf file</h6>
+<h1 id="heading-1"></h1>
+<p>lower addresses
+<img src="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm" alt="ELF Structure">higher addresses</p>
+<h1 id="heading-2"></h1>
+<p>The ELF header defines some basic data, like endianness, architecture, version, etc. The ELF header is 52 or 64 bytes long for 32-bit and 64-bit binaries respectively. The program header table tells the system how to create a process image and it specifies for example what needs to be loaded into memory and where. The section header table defines the sections. The segments contain information that is needed for runtime execution of the file, while sections contain important data for linking and relocation.</p>
+<h3 id="how-an-elf-file-is-executed">How an elf file is executed</h3>
+<p>If you execute an elf file, the kernel first checks the magic bytes (the identifier of an elf file) to check if the file is an elf file. Then the kernel gets the basic information of the elf header, like endianness, etc. From the program header, the kernel determines what segments need to be loaded. Then there is a virtual address space allocated for the process. The segments are created and the segment data is copied to the allocated space (from the file). Then the only thing that is left to do is to jump to the entry point of the program (where the code starts).</p>
+<h3 id="static-versus-dynamic-binaries">Static versus dynamic binaries</h3>
+<p>Binaries can either be statically or dynamically compiled. The difference between them is that a dynamic binary relies on system components, to be more specific the shared libraries. Static binaries contain the libraries by themselves, which means they are portable but way bigger than dynamic binaries.</p>
+<h3 id="shared-libraries">Shared libraries</h3>
+<p>Shared libraries are object files that are mapped to the virtual address space of a program. These include code and data the program needs. They are shared between processes, thus they exist only once in the physical address space. The libraries are mapped into various virtual address spaces of programs, which is done by the kernel. On Windows, it&rsquo;s the same principle.</p>
+<h3 id="modern-exploit-mitigation-features-userspace">Modern exploit mitigation features (userspace)</h3>
+<table>
+<thead>
+<tr>
+<th>access layout space randomization (aslr)</th>
+<th>process independent executable (pie)</th>
+<th>relocation read-only (relro)</th>
+<th>stack canaries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>randomization of shared library and stack addresses etc.</td>
+<td>randomization of the programs base address</td>
+<td>relocating some data to read-only</td>
+<td>protection of buffer overflow</td>
+</tr>
+<tr>
+<td>* aslr and pie is managed by the kernel and the others by the compiler</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-linker-the-plt-and-the-got">The linker, the plt, and the got</h3>
+<p>The linker combines a number of object and archive files, relocates their data, and ties up symbol references. Usually, the last step in compiling a program is to run the linker. The linker makes use of the section header. If the binary is not static, it has to make use of shared libraries. Programs often use functions that are in shared libraries so they have to call them. But the address of the function is not always known (because of aslr) and may be different on other systems, so hard-coding the addresses is a bad idea. That is why there are <code>got</code> and <code>plt</code>. In the <code>got</code>, there are the addresses of some functions from the shared libraries which were resolved by the linker and needed by the program. It will also contain important addresses that will be used in the symbol resolution process.
+<em>The linker resolves the symbols from the shared libraries.</em>
+However, the program doesn&rsquo;t call the addresses in the <code>got</code> directly. There is the <code>plt</code> where some little functions responsible for each function in the shared libraries are in. They are called by the program and they are calling the actual functions from shared libraries. They also call the linker if the functions have not been resolved yet. When we run a program on Linux, as default behavior, the dynamic linker resolves references to symbols in the shared libraries only when it’s needed. In other words, the program doesn’t know the address of a specific function in a shared library, until this function is actually referenced. This process of resolving symbols in run-time is known as lazy binding. This amazing picture by syst3mfailure describes it pretty well:
+<img src="https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png" alt="linker"></p>
+<ul>
+<li>from the text section, the plt function for read is called</li>
+<li>from the plt it is jumped to the got. If the symbol has already been resolved, a libc address would be in it.</li>
+<li>in this case, the symbol hasn&rsquo;t been resolved and we jump back to the plt. Some arguments for the linker are pushed onto the stack and the linker is called. It will resolve the function that we wanted to call earlier and jump to that function.</li>
+</ul>
+<h2 id="the-windows-os-and-kernel">The Windows OS and kernel</h2>
+<h3 id="overview-3">Overview</h3>
+<p>Windows originally was a GUI for MS-DOS. It was created in 1985. Now it is the most popular operating system. The standard file format for executables is PE.</p>
+<h3 id="the-windows-kernel">The Windows kernel</h3>
+<p>the base principle of how the windows kernel works is basically the same as the Linux kernel. The only difference is, that some device drivers or other kernel services can be in userspace too. That&rsquo;s why the Windows kernel is a hybrid kernel (a mixture of monolithic (kernel services in kernel space) and microkernel (kernel services in user space)).</p>
+<h3 id="syscalls-and-interrupts-1">Syscalls and interrupts</h3>
+<p>again, the base principle of syscalls and interrupts is the same. They are used to interface with the system. But in Windows, a userspace program will never use interrupts and syscalls directly. That&rsquo;s because the syscall numbers change very often. On Linux, they don&rsquo;t. Because of this reason, you use a library called <code>ntdll.dll</code>. It is like the <code>libc.so.6</code> in Linux. But you have to use the ntdll library every time you want to do low-level stuff. It handles the syscalls and calls them correctly.</p>
+<h3 id="modern-exploit-mitigation-features-kernelspace-1">Modern exploit mitigation features (kernelspace)</h3>
+<table>
+<thead>
+<tr>
+<th>kernel access layout space randomization (kaslr)</th>
+<th>supervisor mode execution protection (smep)</th>
+<th>supervisor mode access prevention (smap)</th>
+<th>kernel page table isolisation (kpti)</th>
+<th>kernel data protection (kdp)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the kernel base address is randomized</td>
+<td>marking non kernel space pages as nonexecutable</td>
+<td>marking non kernel space pages as nonaccessible</td>
+<td>separation of user and kernel land pages</td>
+<td>marking critical kernel pages as readonly</td>
+</tr>
+</tbody>
+</table>
+<h3 id="windows-calling-convention">Windows calling convention</h3>
+<h4 id="x86-64">x86-64</h4>
+<table>
+<thead>
+<tr>
+<th>parameter type</th>
+<th>arg1</th>
+<th>arg2</th>
+<th>arg3</th>
+<th>arg4</th>
+<th>arg5+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>float</td>
+<td>xmm0</td>
+<td>xmm1</td>
+<td>xmm2</td>
+<td>xmm3</td>
+<td>[ebp+0x0]</td>
+</tr>
+<tr>
+<td>non-float</td>
+<td>rcx</td>
+<td>rdx</td>
+<td>r8</td>
+<td>r9</td>
+<td>[ebp+0x0]</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pe-file-format">PE file format</h2>
+<h3 id="overview-4">Overview</h3>
+<p>The PE file format is the standard executable file format in Windows. It is based on the COFF file format which was used earlier.</p>
+<h3 id="structure-1">Structure</h3>
+<h6 id="here-you-can-see-the-structure-of-a-pe-file">Here you can see the structure of a pe file</h6>
+<p>lower addresses
+<img src="https://wiki.osdev.org/images/d/dd/PEFigure1.jpg" alt="pe">
+higher addresses</p>
+<p>The DOS header is there for compatibility reasons. If we try to execute a pe from DOS on Windows, we get a notification that this application is for DOS. Same the other way around. The MS-DOS real-mode stub program displays this message. The PE header contains information that concerns the entire file. It consists of basic information, like the PE magic. The optional PE header follows directly after the standard PE header. Its size is specified in the PE header which you can also use to tell if the optional header exists. The magic code field can be used in conjunction with the machine type to see in the PE header to detect if the PE file is running on a compatible system. There are a few other useful memory-related variables including the size and virtual base of the code and data, as well as the application&rsquo;s version number, entry point, and how many directories there are. A PE file is made up of sections which consist of a name, offset within the file, virtual address to copy to, as well as the size of the section in the file and in virtual memory (which may differ, in which case the difference should be cleared 0s), and associated flags. Each section has an entry in the section header table.</p>
+<h3 id="modern-exploit-mitigation-features">Modern exploit mitigation features</h3>
+<table>
+<thead>
+<tr>
+<th>access layout space randomization (aslr)</th>
+<th>access layout space randomization for user binaries (like pie)</th>
+<th>force aslr</th>
+<th>stack canaries</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>randomization of shared library and stack addresses etc.</td>
+<td>randomization of the programs base address</td>
+<td>forced randomization of every programs base address</td>
+<td>protection of buffer overflow</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sources">Sources</h2>
+<p>Picture 1: <a href="http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg">http://computerscience.gcse.guru/wp-content/uploads/2016/04/Von-Neumann-Architecture-Diagram.jpg</a>
+Picture 2: <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png">https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/MMU_principle_updated.png/325px-MMU_principle_updated.png</a>
+Picture 3: <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg">https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg</a>
+Picture 4: <a href="https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm">https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm</a>
+Picture 5: <a href="https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png">https://syst3mfailure.io/assets/images/ret2dl_resolve/lazy_binding.png</a>
+Picture 6: <a href="https://wiki.osdev.org/images/d/dd/PEFigure1.jpg">https://wiki.osdev.org/images/d/dd/PEFigure1.jpg</a></p>
+</div>
+				
+			</article>
+		</div>
+	</main>
+	
+	
+
+
+
+	
+
+	</div>
+	<footer class="footer">
+	<div class="footer__copyright">© 2022 BitFriends&#39; blog. <span class="footer__copyright-credits">Powered by <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/vimux/binario" rel="nofollow noopener" target="_blank">Binario</a> theme.</span></div>
+</footer>
+</body>
+</html>
