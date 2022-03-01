@@ -1,19 +1,39 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>My New Hugo Site</title>
-    <link>http://example.org/</link>
-    <description>Recent content on My New Hugo Site</description>
+    <title>BitFriends&#39; blog</title>
+    <link>https://b17fr13nds.github.io/</link>
+    <description>Recent content on BitFriends&#39; blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 09 Jan 2022 17:10:44 +0000</lastBuildDate><atom:link href="http://example.org/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 01 Mar 2022 14:40:10 +0000</lastBuildDate><atom:link href="https://b17fr13nds.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Jailbreaking iOS 9.3.5</title>
+      <link>https://b17fr13nds.github.io/posts/jailbreaking-ios-9.3.5/</link>
+      <pubDate>Tue, 01 Mar 2022 14:40:10 +0000</pubDate>
+      
+      <guid>https://b17fr13nds.github.io/posts/jailbreaking-ios-9.3.5/</guid>
+      <description>jailbreaking iOS 9.3.5 (CVE-2016-4669) hey I am BitFriends, and in this article, I&amp;rsquo;ll present a detailed ios jailbreak writeup and some basic tips and tricks on how to set up an environment for exploiting. The bug I am exploiting is in the iOS kernel. I hope this is a helpful reference for anyone who wants to start with iOS pwn!
+Now let us begin! short story:
+ a few weeks ago, I found an old iPad 3,1 by my dad.</description>
+    </item>
+    
+    <item>
+      <title>software and hardware fundamentals</title>
+      <link>https://b17fr13nds.github.io/posts/software_and_hardware_fundamentals/</link>
+      <pubDate>Sun, 09 Jan 2022 19:19:54 +0000</pubDate>
+      
+      <guid>https://b17fr13nds.github.io/posts/software_and_hardware_fundamentals/</guid>
+      <description>hardware and software fundamentals overview Note that this is only a little reference that I initially created for myself. I decided to publish it for those, who want to have an overview of the fundamentals. If you spot any mistakes or if you think something should be added, please reach me on discord (BitFriends#2070). I used some pictures from other people because this was only a reference for me. The people who created the pictures are amazing and should feel honored :)</description>
+    </item>
+    
     <item>
       <title>Intro</title>
-      <link>http://example.org/posts/intro/</link>
+      <link>https://b17fr13nds.github.io/posts/intro/</link>
       <pubDate>Sun, 09 Jan 2022 17:10:44 +0000</pubDate>
       
-      <guid>http://example.org/posts/intro/</guid>
-      <description></description>
+      <guid>https://b17fr13nds.github.io/posts/intro/</guid>
+      <description>Hello, I am BitFriends. I am a pwn enthusiast. I will post some blogs and writeups here in the future :)</description>
     </item>
     
   </channel>
