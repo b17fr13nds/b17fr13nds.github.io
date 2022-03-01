@@ -87,36 +87,36 @@ VBoxManage setextradata &quot;Mac OS X Sierra&quot; VBoxInternal2/EfiGraphicsRes
 <p><em>Replace Mac OS X Sierra with the name of your machine and 1366x768x32 with your screen resolution.</em></p>
 <p>Now the machine is ready to boot up. Just go through the setup. Entering the Apple ID is not necessary.</p>
 <p>The next step is to download Xcode 8 from xcodereleases.com. After you download the XIP archive you can extract it and move the extracted file into <code>/Applicaions</code>. Now you can run Xcode.</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step1_openxcode.png" alt="step1">
-After opening Xcode, you are prompted with the main window. You want to create a new project.</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step2_createsingleviewapp.png" alt="step2">
-A single screen is sufficient to be able to launch our exploit. So we will select the Single View Application.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step1_openxcode.png" alt="step1"></p>
+<p>After opening Xcode, you are prompted with the main window. You want to create a new project.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step2_createsingleviewapp.png" alt="step2"></p>
+<p>A single screen is sufficient to be able to launch our exploit. So we will select the Single View Application.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step3_configureproject.png" alt="step3"></p>
 <p>Now you can configure your project. Choose a name for your project and select a personal team. You may not be able to choose it you didn&rsquo;t log in already with your Apple ID. Just log in to be able to select the personal team. Enter an organization name and identifier. Then select objective-c as language. Now you can proceed.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step4_signing.png" alt="step4"></p>
 <p>Make sure the signing section looks like this. You may need to connect your iDevice via USB to get a valid signing certificate.</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step5_selectversion.png" alt="step5">
-We need to change the iOS version to 9.3 since that is the closest version we can get to iOS 9.3.5. Because of the lack of versions and differences between the Xcode simulator and a real device, it is necessary to use a real device.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step5_selectversion.png" alt="step5"></p>
+<p>We need to change the iOS version to 9.3 since that is the closest version we can get to iOS 9.3.5. Because of the lack of versions and differences between the Xcode simulator and a real device, it is necessary to use a real device.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step6_nodevsconnected.png" alt="step6"></p>
 <p>If your iDevice doesn&rsquo;t show up after plugging it in, you&rsquo;ll have to click <code>No devices connected to ...</code></p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step7_connectandsetup.png" alt="step7"></p>
 <p>Here you can select your device and set it up. After that, we can start creating a little application! Now go to the file explorer on the left and open the file <code>Main.storyboard</code>.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step8_changeview.png" alt="step8"></p>
 <p>I am developing the exploit for an iPad, so I selected a device with a similar size. This option is only for the view, so no need to choose the exact device</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step9_button.gif" alt="step9">
-We need a way to start our exploit. I think the best way is to create a simple button.</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step10_opensplitview.png" alt="step10">
-The next step is to make the button actually do something. The first thing we need to do is to open the split view. Click on the button with the two circles.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step9_button.gif" alt="step9"></p>
+<p>We need a way to start our exploit. I think the best way is to create a simple button.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step10_opensplitview.png" alt="step10"></p>
+<p>The next step is to make the button actually do something. The first thing we need to do is to open the split view. Click on the button with the two circles.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step11_splitview.png" alt="step11"></p>
 <p>Make sure that <code>Main.storyboard</code> is on the left side and <code>ViewController.m</code> on the right side.</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step12_buttonaction.gif" alt="step12">
-Now we drag the button action into the <code>ViewController.m</code> file and give it a name. A new function will be created. Later we will put the exploit code in a separate file and call the exploit function from the created function.</p>
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step12_buttonaction.gif" alt="step12"></p>
+<p>Now we drag the button action into the <code>ViewController.m</code> file and give it a name. A new function will be created. Later we will put the exploit code in a separate file and call the exploit function from the created function.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step13_selectdevice.png" alt="step13"></p>
 <p>After that, we can select our iDevice and run the application. For me, there were two options for devices. I had to select the 2nd one because the other didn&rsquo;t work for me somehow.</p>
 <p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step14_trust.png" alt="step14"></p>
 <p>If you selected the right device, you can run the application (press the button in the top left). If you run it for the first time, you might need to go to <code>Settings &gt; General &gt; Device Management &gt; Your Developer ID</code>, and press <code>Trust &quot;Your Developer ID&quot;</code>.</p>
-<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step15_successrun.png" alt="step15">
-Finally, you can run the app. As you can see, everything works as expected :)
+<p><img src="https://raw.githubusercontent.com/b17fr13nds/iOS-programming/main/static/step15_successrun.png" alt="step15"></p>
+<p>Finally, you can run the app. As you can see, everything works as expected :)
 You might want to create a <code>.ipa</code> file to install it without Xcode. For this, just select <code>Generic iOS Device</code> instead of your device and hit <code>ctrl-b</code>. Your application will now build. The next step is to search the app in Finder, move it into a folder called <code>Payload</code>, compress it, and rename the archive to <code>myname.ipa</code>.</p>
 <h1 id="the-bug">The bug</h1>
 <h6 id="but-where-can-we-even-see-the-bug">But where can we even see the bug?</h6>
