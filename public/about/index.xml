@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Abouts on BitFriends&#39; blog</title>
+    <link>http://localhost:1313/about/</link>
+    <description>Recent content in Abouts on BitFriends&#39; blog</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Fri, 06 Sep 2024 16:25:23 +0200</lastBuildDate>
+    <atom:link href="http://localhost:1313/about/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>About</title>
+      <link>http://localhost:1313/about/about/</link>
+      <pubDate>Fri, 06 Sep 2024 16:25:23 +0200</pubDate>
+      <guid>http://localhost:1313/about/about/</guid>
+      <description>&lt;p&gt;I like programming and low-level, do vuln research, play ctf and pwn stuff.&lt;/p&gt;&#xA;&lt;p&gt;When I&amp;rsquo;m not using my pc, I enjoy spending time with music, playing airsoft and working on motorcycles.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

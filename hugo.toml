@@ -1,0 +1,35 @@
+baseURL = 'https://example.org/'
+languageCode = 'en-us'
+title = "BitFriends' blog"
+theme = 'archie'
+
+[params]
+	mode="auto"
+
+[[params.social]]
+	name = "GitHub"
+	icon = "github"
+	url = "https://github.com/b17fr13nds"
+
+[[params.social]]
+	name = "Twitter"
+	icon = "twitter"
+	url = "https://twitter.com/BitFriends1/"
+
+# Main menu Items
+
+[[menu.main]]
+	name = "Home"
+	url = "/"
+	weight = 1
+
+[[menu.main]]
+        name = "Posts"
+        url = "/posts"
+        weight = 2
+
+[[menu.main]]
+	name = "About"
+	url = "/posts/about"
+	weight = 3
+
