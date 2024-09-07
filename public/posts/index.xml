@@ -6,8 +6,15 @@
     <description>Recent content in Posts on BitFriends&#39; blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Fri, 06 Sep 2024 16:25:23 +0200</lastBuildDate>
+    <lastBuildDate>Sat, 07 Sep 2024 18:11:00 +0200</lastBuildDate>
     <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>my own kernel fuzzer - lxfuzz</title>
+      <link>http://localhost:1313/posts/kernel_fuzzer_lxfuzz/</link>
+      <pubDate>Sat, 07 Sep 2024 18:11:00 +0200</pubDate>
+      <guid>http://localhost:1313/posts/kernel_fuzzer_lxfuzz/</guid>
+      <description>&lt;p&gt;my long-time project is writing a kernel fuzzer named lxfuzz. it is a coverage-guided fuzzer for the linux kernel. I chose that project for some reasons:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;to learn about fuzzing, its mechanisms etc. in general&lt;/li&gt;&#xA;&lt;li&gt;to learn more about the linux kernel, especially&lt;/li&gt;&#xA;&lt;li&gt;to improve my C++ skills :) (the language used for lxfuzz)&lt;/li&gt;&#xA;&lt;li&gt;profit (finding CVEs)&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;undert the hood it&amp;rsquo;s using qemu to run the kernel and kcov for coverage collection.&#xA;the project is still work-in-progress and developed gradually.&#xA;the current features are:&lt;/p&gt;</description>
+    </item>
     <item>
       <title>About</title>
       <link>http://localhost:1313/posts/about/</link>
