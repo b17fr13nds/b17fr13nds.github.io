@@ -15,5 +15,12 @@
       <guid>http://localhost:1313/posts/about/</guid>
       <description>&lt;p&gt;I like programming and low-level, do vuln research, pwn stuff and play ctf with ARESx/FMC.&lt;/p&gt;&#xA;&lt;p&gt;When I&amp;rsquo;m not using my pc, I enjoy spending time with music, playing airsoft and working on motorcycles.&lt;/p&gt;</description>
     </item>
+    <item>
+      <title>exploiting the kernel - CVE-2022-24122</title>
+      <link>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</link>
+      <pubDate>Sun, 12 Mar 2023 17:47:13 +0200</pubDate>
+      <guid>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</guid>
+      <description>&lt;p&gt;for the first time I exploited the kernel in real life.&#xA;I used the bug &lt;a href=&#34;https://www.cvedetails.com/cve/CVE-2022-24122/&#34;&gt;CVE-2022-24122&lt;/a&gt;, which allowed a use-after-free due to bad use of &lt;code&gt;refcount&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;the exploit itself requires a kaslr leak to prevent an oops during the process,&#xA;as well as access to user namespaces. it is not really reliable, needs many tries :D&lt;/p&gt;&#xA;&lt;p&gt;to get root I corrupted the slup freelist and wrote to &lt;code&gt;modprobe_path&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
   </channel>
 </rss>
