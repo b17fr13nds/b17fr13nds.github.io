@@ -1,5 +1,5 @@
 +++
-title = 'the ring - BlackHat MEA CTF'
+title = 'the ring - BlackHat MEA CTF 2024'
 date = 2024-09-02T20:24:09+02:00
 draft = false
 +++

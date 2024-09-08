@@ -16,14 +16,7 @@
       <description>&lt;p&gt;my long-time project is writing a kernel fuzzer named lxfuzz. it is a coverage-guided fuzzer for the linux kernel. I chose that project for some reasons:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;to learn about fuzzing, its mechanisms etc. in general&lt;/li&gt;&#xA;&lt;li&gt;to learn more about the linux kernel, especially&lt;/li&gt;&#xA;&lt;li&gt;to improve my C++ skills :) (the language used for lxfuzz)&lt;/li&gt;&#xA;&lt;li&gt;profit (finding CVEs)&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;undert the hood it&amp;rsquo;s using qemu to run the kernel and kcov for coverage collection.&#xA;the project is still work-in-progress and developed gradually.&#xA;the current features are:&lt;/p&gt;</description>
     </item>
     <item>
-      <title>About</title>
-      <link>http://localhost:1313/posts/about/</link>
-      <pubDate>Fri, 06 Sep 2024 16:25:23 +0200</pubDate>
-      <guid>http://localhost:1313/posts/about/</guid>
-      <description>&lt;p&gt;I like programming and low-level, do vuln research, pwn stuff and play ctf with ARESx/FMC.&lt;/p&gt;&#xA;&lt;p&gt;When I&amp;rsquo;m not using my pc, I enjoy spending time with music, playing airsoft and working on motorcycles.&lt;/p&gt;</description>
-    </item>
-    <item>
-      <title>the ring - BlackHat MEA CTF</title>
+      <title>the ring - BlackHat MEA CTF 2024</title>
       <link>http://localhost:1313/posts/the_ring_bhmea/</link>
       <pubDate>Mon, 02 Sep 2024 20:24:09 +0200</pubDate>
       <guid>http://localhost:1313/posts/the_ring_bhmea/</guid>
@@ -42,6 +35,13 @@
       <pubDate>Sun, 12 Mar 2023 17:47:13 +0200</pubDate>
       <guid>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</guid>
       <description>&lt;p&gt;for the first time I exploited the kernel in real life.&#xA;I used the bug &lt;a href=&#34;https://www.cvedetails.com/cve/CVE-2022-24122/&#34;&gt;CVE-2022-24122&lt;/a&gt;, which allowed a use-after-free due to bad use of &lt;code&gt;refcount&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;the exploit itself requires a kaslr leak to prevent an oops during the process,&#xA;as well as access to user namespaces. it is not really reliable, needs many tries :D&lt;/p&gt;&#xA;&lt;p&gt;to get root I corrupted the slup freelist and wrote to &lt;code&gt;modprobe_path&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>About</title>
+      <link>http://localhost:1313/posts/about/</link>
+      <pubDate>Tue, 01 Jan 1337 16:25:23 +0200</pubDate>
+      <guid>http://localhost:1313/posts/about/</guid>
+      <description>&lt;p&gt;I like programming and low-level, do vuln research, pwn stuff and play ctf with ARESx/FMC.&lt;/p&gt;&#xA;&lt;p&gt;When I&amp;rsquo;m not using my pc, I enjoy spending time with music, playing airsoft and working on motorcycles.&lt;/p&gt;</description>
     </item>
   </channel>
 </rss>
