@@ -23,6 +23,13 @@
       <description>&lt;p&gt;I like programming and low-level, do vuln research, pwn stuff and play ctf with ARESx/FMC.&lt;/p&gt;&#xA;&lt;p&gt;When I&amp;rsquo;m not using my pc, I enjoy spending time with music, playing airsoft and working on motorcycles.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>valorn&#39;t - PlaidCTF 2024</title>
+      <link>http://localhost:1313/posts/valornt_plaid/</link>
+      <pubDate>Tue, 23 Apr 2024 20:00:41 +0200</pubDate>
+      <guid>http://localhost:1313/posts/valornt_plaid/</guid>
+      <description>&lt;p&gt;I solved the easy pwn chall &amp;ldquo;valorn&amp;rsquo;t&amp;rdquo; during PlaidCTF while playing with Friendly Maltese Citizens.&lt;/p&gt;&#xA;&lt;p&gt;as usual, the goal was to win the game and read the flag&lt;/p&gt;&#xA;&lt;h1 id=&#34;heading&#34;&gt;&lt;/h1&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;int&lt;/span&gt; ret &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;play_pew_pew_game&lt;/span&gt;();&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#x9;&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; (ret &lt;span style=&#34;color:#f92672&#34;&gt;==&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;) {&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#x9;&#x9;&lt;span style=&#34;color:#a6e22e&#34;&gt;read_flage&lt;/span&gt;();&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#x9;}&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pr</description>
+    </item>
+    <item>
       <title>exploiting the kernel - CVE-2022-24122</title>
       <link>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</link>
       <pubDate>Sun, 12 Mar 2023 17:47:13 +0200</pubDate>
