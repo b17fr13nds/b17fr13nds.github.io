@@ -23,6 +23,13 @@
       <description>&lt;p&gt;I like programming and low-level, do vuln research, pwn stuff and play ctf with ARESx/FMC.&lt;/p&gt;&#xA;&lt;p&gt;When I&amp;rsquo;m not using my pc, I enjoy spending time with music, playing airsoft and working on motorcycles.&lt;/p&gt;</description>
     </item>
     <item>
+      <title>the ring - BlackHat MEA CTF</title>
+      <link>http://localhost:1313/posts/the_ring_bhmea/</link>
+      <pubDate>Mon, 02 Sep 2024 20:24:09 +0200</pubDate>
+      <guid>http://localhost:1313/posts/the_ring_bhmea/</guid>
+      <description>&lt;p&gt;I had a fun time playing BlackHat MEA CTF. this pwn challenge was particulary nice.&lt;/p&gt;&#xA;&lt;p&gt;in &amp;ldquo;the ring&amp;rdquo; you were given a &lt;code&gt;FLAC&lt;/code&gt; audio file parser, written in C++.&#xA;you can provide such a custom audio file and get presented the output of the program.&#xA;notice that there is a python wrapper handling the file and outputs readable text only.&lt;/p&gt;&#xA;&lt;p&gt;now the general functionality of the program:&#xA;the program checks the magic bytes first (&lt;code&gt;#define FLAC_MAGIC 0x664c6143U&lt;/code&gt;) and then immedeately&#xA;starts looking for the initial &lt;code&gt;TYPE_STREAMINFO&lt;/code&gt; block, which may be followed by more blocks.&lt;/p&gt;</description>
+    </item>
+    <item>
       <title>valorn&#39;t - PlaidCTF 2024</title>
       <link>http://localhost:1313/posts/valornt_plaid/</link>
       <pubDate>Tue, 23 Apr 2024 20:00:41 +0200</pubDate>

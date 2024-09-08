@@ -1,7 +1,7 @@
 +++
 title = "valorn't - PlaidCTF 2024"
 date = 2024-04-23T20:00:41+02:00
-draft = true
+draft = false
 +++
 
 I solved the easy pwn chall "valorn't" during PlaidCTF while playing with Friendly Maltese Citizens.
