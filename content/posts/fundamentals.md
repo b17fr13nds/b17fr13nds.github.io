@@ -7,43 +7,43 @@ draft = false
 _note that this is only an early reference that I initially created for mysELF. I decided to publish it for those, who want to have an overview of the fundamentals. if you spot any mistakes or if you think something should be added, please reach me on discord (`bitfriends`). I used some pictures from other people because this was only a reference for me. the people who created the pictures are amazing and should feel honored :)_
 
 ## table of contents
-*   computer components are their functionalities
-    – the CPU
-    – the MMU
-    – the RAM
-    – the bus
-*   the x86(-64) architecture
-    – overview
-    – data
-    – segmentation
-    – CPU registers
-    – call stack
-    – privilege/protection rings
-*   Linux operating system and kernel
-    – overview
-    – the kernel
-    – syscalls and interrupts
-    – modern exploit mitigations (kernel space)
-    – Linux calling convention
-*   ELF file format (Linux)
-    – overview
-    – structure
-    – how an ELF file is executed
-    – static vs dynamic binaries
-    – shared libraries
-    – modern exploit mitigations (userspace)
-    – the linker, the plt and the got
-*   Windows operating system and kernel
-    – overview
-    – the kernel
-    – syscalls and interrupts
-    – modern exploit mitigations (kernel space)
-    – Windows calling convention
-*   PE file format (Windows)
-    – overview
-    – structure
-    – modern exploit mitigations (userspace)
-*   sources
+* computer components are their functionalities \
+&nbsp;– the CPU \
+&nbsp;– the MMU \
+&nbsp;– the RAM \
+&nbsp;– the bus
+* the x86(-64) architecture \
+&nbsp;– overview \
+&nbsp;– data \
+&nbsp;– segmentation \
+&nbsp;– CPU registers \
+&nbsp;– call stack \
+&nbsp;– privilege/protection rings
+* Linux operating system and kernel \
+&nbsp;– overview \
+&nbsp;– the kernel \
+&nbsp;– syscalls and interrupts \
+&nbsp;– modern exploit mitigations (kernel space) \
+&nbsp;– Linux calling convention 
+* ELF file format (Linux) \
+&nbsp;– overview \
+&nbsp;– structure \
+&nbsp;– how an ELF file is executed \
+&nbsp;– static vs dynamic binaries \
+&nbsp;– shared libraries \
+&nbsp;– modern exploit mitigations (userspace) \
+&nbsp;– the linker, the plt and the got
+* Windows operating system and kernel \
+&nbsp;– overview \
+&nbsp;– the kernel \
+&nbsp;– syscalls and interrupts \
+&nbsp;– modern exploit mitigations (kernel space)\
+&nbsp;– Windows calling convention
+* PE file format (Windows) \
+&nbsp;– overview \
+&nbsp;– structure \
+&nbsp;– modern exploit mitigations (userspace)
+* sources \
 
 ## computer components
 ### CPU (central processing unit - assuming it has x86 architecture)
@@ -71,35 +71,33 @@ the `x86` architecture is a CISC (Complex instruction set computer) architecture
 
 ### processor modes (8080 - x86-64)
 processor modes are various ways how the processor creates an operating environment. the processor mode controls how the processor manages the system memory, the tasks that use it, registers, etc. I listed the most important ones, starting with older ones.
-*   real mode flat model (unreal mode)
-    – 16-bit architecture
-    – CPU can only access 64K at a time (due to 16-bit limitation)
-    – your program and its data must exist within a 64K block of memory
-    – segment registers are set to the beginning of the memory block by the OS. they won’t change as long as the program is running
-    – the data of your program isn’t really divided into segments
-    – it is using 16-bit addresses
-
-*   real mode segmented model
-    – 16-bit architecture
-    – CPU can access 1MB (because of using segment selectors, see below)
-    – your program and its data can use the full 1MB of memory
-    – the programmer has to set the segment registers
-    – the data of your program is divided into segments
-    – it is using 20-bit addresses. you can access data with `segment:offset`, having them stored in two different registers. you can also use `offset` only, but you can’t access data that are at a memory location higher than `0xffff`.
-
-*   protected mode
-    – 32-bit architecture
-    – CPU can access over 4GB
-    – your program is given a 4GB block of memory
-    – the segment registers are managed by the OS and cannot be changed. their new job is to locate the “flat” segment in virtual memory.
-    – 32-bit addresses are used
-    
-*   long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed
+* real mode flat model (unreal mode) \
+&nbsp;– 16-bit architecture \
+&nbsp;– CPU can only access 64K at a time (due to 16-bit limitation) \
+&nbsp;– your program and its data must exist within a 64K block of memory \
+&nbsp;– segment registers are set to the beginning of the memory block by the OS. they won’t change as long as the program is running \
+&nbsp;– the data of your program isn’t really divided into segments \
+&nbsp;– it is using 16-bit addresses 
+* real mode segmented model \
+&nbsp;– 16-bit architecture \
+&nbsp;– CPU can access 1MB (because of using segment selectors, see below) \
+&nbsp;– your program and its data can use the full 1MB of memory \
+&nbsp;– the programmer has to set the segment registers \
+&nbsp;– the data of your program is divided into segments \
+&nbsp;– it is using 20-bit addresses. you can access data with `segment:offset`, having them stored in two different registers. you can also use `offset` only, but you can’t access data that are at a memory location higher than `0xffff`. 
+* protected mode \
+&nbsp;– 32-bit architecture \
+&nbsp;– CPU can access over 4GB \
+&nbsp;– your program is given a 4GB block of memory \
+&nbsp;– the segment registers are managed by the OS and cannot be changed. their new job is to locate the “flat” segment in virtual memory. \
+&nbsp;– 32-bit addresses are used
+* long mode - like protected mode, but everything is 64 bit wide and more memory can be accessed
 
 ##### _for compatibility reasons and/or for certain low level operations, modern CPUs can switch into other (older) processor modes_
 
 ### memory segmentation
 memory segmentation is an operating system memory management technique of division of a computer’s primary memory into segments or sections. talking of protected and long mode, you know that every program has its own virtual address space. inside that is its data and code. the data and code are split into segments (an area in virtual memory for computer use), which are sometimes divided again into sections that are for more specific use (later more). for example, there is the `text` segment, where your code is in. the `data` and `bss` segments are for data, to be more precise, the `data` is for initialized, and the `bss` is for uninitialized variables. the `heap` segment is also used for data. but it is dynamic memory, which means that you can request and release memory from the heap segment. last but not least there is the `stack segment` or only `stack`, which is also used to store data, especially local variables. it is like a real stack, where you can put something on top of it (called push-operation) and remove something from the top (called pop-operation). you cannot push or pop something from the bottom of the stack which doesn’t work in real life either. I will explain later when what is used. this is how it would look like:
+
 ![Segments](https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Program_memory_layout.pdf/page1-225px-Program_memory_layout.pdf.jpg)
 ### CPU registers
 ##### the most important ones (user accessible):
@@ -112,6 +110,7 @@ memory segmentation is an operating system memory management technique of divisi
 | 128 | \-  | \-  | xmm0, xmm1, xmm2, … |
 | 256 | \-  | \-  | ymm0, ymm1, ymm2, … |
 | 512 | \-  | \-  | zmm0, zmm1, zmm2, … |
+
 \* some registers are only present on specific architectures
 
 most registers are for general use, however, there is the register `rbp`/`ebp`/`bp` (frame/base pointer - points to the current stack frame), `rsp`/`esp`/`sp` (stack pointer - points on the top of the stack), and the `rip`/`eip`/`ip` (instruction pointer - points to the instruction which will be executed by the CPU). after the instruction was executed, the instruction pointer will be incremented to point to the next instruction, if no controlling/control transfer instruction was executed. more on the base pointer and the instruction pointer in the next chapter.
@@ -151,8 +150,8 @@ since 1999, the ELF file format is the standard executable format on Linux. it d
 
 ### structure
 ##### here you can see the structure of an ELF file
-lower addresses
-![ELF Structure](https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm)
+lower addresses \
+![ELF Structure](https://www.researchgate.net/profile/Wai-Kyi/publication/334531571/figure/fig2/AS:781892970369029@1563429219773/Basic-architecture-of-ELF-file-format-16.ppm) \
 higher addresses
 
 the ELF header defines some basic data, like endianness, architecture, version, etc. the ELF header is 52 or 64 bytes long for 32-bit and 64-bit binaries respectively. the program header table tells the system how to create a process image and it specifies for example what needs to be loaded into memory and where. the section header table defines the sections. the segments contain information that is needed for runtime execution of the file, while sections contain important data for linking and relocation.
@@ -215,8 +214,8 @@ the PE file format is the standard executable file format on Windows. it is base
 
 ### structure
 ##### here you can see the structure of a PE file
-lower addresses
-![pe](https://wiki.osdev.org/images/d/dd/PEFigure1.jpg)
+lower addresses \
+![pe](https://wiki.osdev.org/images/d/dd/PEFigure1.jpg) \
 higher addresses
 
 the DOS header is there for compatibility reasons. if we try to execute a PE from DOS on Windows, we get a notification that this application is for DOS. same the other way around. the MS-DOS real-mode stub program displays this message. the PE header contains information that concerns the entire file. it consists of basic information, like the PE magic. the optional PE header follows directly after the standard PE header. its size is specified in the PE header which you can also use to tell if the optional header exists. the magic code field can be used in conjunction with the machine type to see in the PE header to detect if the PE file is running on a compatible system. there are a few other useful memory-related variables including the size and virtual base of the code and data, as well as the application’s version number, entry point, and how many directories there are. a PE file is made up of sections which consist of a name, offset within the file, virtual address to copy to, as well as the size of the section in the file and in virtual memory (which may differ, in which case the difference should be cleared 0s), and associated flags. each section has an entry in the section header table.
