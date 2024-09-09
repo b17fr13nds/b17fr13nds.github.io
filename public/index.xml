@@ -6,8 +6,15 @@
     <description>Recent content on BitFriends&#39; blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 07 Sep 2024 18:11:00 +0200</lastBuildDate>
+    <lastBuildDate>Mon, 09 Sep 2024 08:46:34 +0200</lastBuildDate>
     <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>TLN - snakeCTF 2024</title>
+      <link>http://localhost:1313/posts/tln_snake/</link>
+      <pubDate>Mon, 09 Sep 2024 08:46:34 +0200</pubDate>
+      <guid>http://localhost:1313/posts/tln_snake/</guid>
+      <description>&lt;p&gt;this weekend I played snakeCTF for fun and managed to solve a few pwns. one of them was TLN.&#xA;the challenge code was pretty simple, introducing a classical oob index vulnerability:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; OPT_SET:&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Index: &amp;#34;&lt;/span&gt;);&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    index &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;get_int&lt;/span&gt;();&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;print&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;Content: &amp;#34;&lt;/span&gt;);&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#a6e22e&#34;&gt;read_exact&lt;/span&gt;(&lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;(notes[index].content), &lt;span style=&#34;color:#66d9ef&#34;&gt;sizeof&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;item_t&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;);&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    notes[index].content[&lt;span style=&#34;color:#66d9ef&#34;&gt;sizeof&lt;/span&gt;(&lt;span style=&#34;color:#66d9ef&#34;&gt;item_t&lt;/span&gt;) &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;] &lt;span style=&#34;color:#f92672&#34;&gt;=&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;0&lt;/span&gt;;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pr</description>
+    </item>
     <item>
       <title>my own kernel fuzzer - lxfuzz</title>
       <link>http://localhost:1313/posts/kernel_fuzzer_lxfuzz/</link>
@@ -34,7 +41,14 @@
       <link>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</link>
       <pubDate>Sun, 12 Mar 2023 17:47:13 +0200</pubDate>
       <guid>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</guid>
-      <description>&lt;p&gt;for the first time I exploited the kernel in real life.&#xA;I used the bug &lt;a href=&#34;https://www.cvedetails.com/cve/CVE-2022-24122/&#34;&gt;CVE-2022-24122&lt;/a&gt;, which allowed a use-after-free due to bad use of &lt;code&gt;refcount&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;the exploit itself requires a kaslr leak to prevent an oops during the process,&#xA;as well as access to user namespaces. it is not really reliable, needs many tries :D&lt;/p&gt;&#xA;&lt;p&gt;to get root I corrupted the slup freelist and wrote to &lt;code&gt;modprobe_path&lt;/code&gt;.&lt;/p&gt;</description>
+      <description>&lt;p&gt;for the first time I exploited the kernel in real life.&#xA;I used the bug &lt;a href=&#34;https://www.cvedetails.com/cve/CVE-2022-24122/&#34;&gt;CVE-2022-24122&lt;/a&gt;, which allowed a use-after-free due to bad use of &lt;code&gt;refcount&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;the exploit itself requires a kaslr leak to prevent an oops during the process,&#xA;as well as access to user namespaces. it is not really reliable, needs many tries :D&lt;/p&gt;&#xA;&lt;p&gt;to get root I corrupted the slub freelist and wrote to &lt;code&gt;modprobe_path&lt;/code&gt;.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>software and hardware fundamentals</title>
+      <link>http://localhost:1313/posts/fundamentals/</link>
+      <pubDate>Tue, 01 Mar 2022 12:35:03 +0200</pubDate>
+      <guid>http://localhost:1313/posts/fundamentals/</guid>
+      <description>&lt;p&gt;&lt;em&gt;note that this is only an early reference that I initially created for mysELF. I decided to publish it for those, who want to have an overview of the fundamentals. if you spot any mistakes or if you think something should be added, please reach me on discord (&lt;code&gt;bitfriends&lt;/code&gt;). I used some pictures from other people because this was only a reference for me. the people who created the pictures are amazing and should feel honored :)&lt;/em&gt;&lt;/p&gt;</description>
     </item>
     <item>
       <title>About</title>
