@@ -1,6 +1,6 @@
 +++
 title = 'jailbreaking iOS 9.3.5 - CVE-2016-4669'
-date = 2024-03-01T14:02:26+02:00
+date = 2022-03-01T14:02:26+02:00
 draft = false
 +++
 
