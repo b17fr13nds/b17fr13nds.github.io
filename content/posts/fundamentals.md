@@ -43,7 +43,7 @@ _note that this is only an early reference that I initially created for mysELF. 
 &nbsp;– overview \
 &nbsp;– structure \
 &nbsp;– modern exploit mitigations (userspace)
-* sources \
+* sources
 
 ## computer components
 ### CPU (central processing unit - assuming it has x86 architecture)
