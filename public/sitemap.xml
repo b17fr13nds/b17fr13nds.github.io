@@ -3,10 +3,13 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>http://localhost:1313/</loc>
-    <lastmod>2024-09-09T08:46:34+02:00</lastmod>
+    <lastmod>2024-10-18T18:50:53+02:00</lastmod>
+  </url><url>
+    <loc>http://localhost:1313/posts/brics_chains/</loc>
+    <lastmod>2024-10-18T18:50:53+02:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/</loc>
-    <lastmod>2024-09-09T08:46:34+02:00</lastmod>
+    <lastmod>2024-10-18T18:50:53+02:00</lastmod>
   </url><url>
     <loc>http://localhost:1313/posts/tln_snake/</loc>
     <lastmod>2024-09-09T08:46:34+02:00</lastmod>

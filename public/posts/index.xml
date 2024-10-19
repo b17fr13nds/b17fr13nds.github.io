@@ -6,8 +6,15 @@
     <description>Recent content in Posts on BitFriends&#39; blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 09 Sep 2024 08:46:34 +0200</lastBuildDate>
+    <lastBuildDate>Fri, 18 Oct 2024 18:50:53 +0200</lastBuildDate>
     <atom:link href="http://localhost:1313/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>chains - BRICS CTF 2024</title>
+      <link>http://localhost:1313/posts/brics_chains/</link>
+      <pubDate>Fri, 18 Oct 2024 18:50:53 +0200</pubDate>
+      <guid>http://localhost:1313/posts/brics_chains/</guid>
+      <description>&lt;p&gt;two weeks ago, I played BRICS CTF with r3kapig, and we ranked 1st!&#xA;chains was one of the challanges I solved.&lt;/p&gt;&#xA;&lt;p&gt;we were given a program to add/remove proxies and chains. upon executing we&amp;rsquo;re presented with:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;1. Add Proxy&#xA;2. Delete Proxy&#xA;3. Add Chain&#xA;4. View Chain&#xA;5. Delete Chain&#xA;6. Exit&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;that resembles a typical heap challenge. it turns out to be one,&#xA;since the following structures are getting allocated dynamically:&lt;/p&gt;</description>
+    </item>
     <item>
       <title>TLN - snakeCTF 2024</title>
       <link>http://localhost:1313/posts/tln_snake/</link>
