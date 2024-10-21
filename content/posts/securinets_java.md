@@ -66,14 +66,16 @@ we get three "shots", however they are all printed at the same time and heavily 
 I noticed that the stack randomization was pretty odd, since the lower 2 bytes weren't randomized at all.
 
 to our advantage, we had pointers on the stack, that in turn pointed to other stack pointers.
-given that, we can write to those pointers to create references to the saved rip, which I
-managed within the first `printf`. that way we can write to them in later `printf`s to get rip control.
+given that, we can write to those pointers to create references to the saved rip, which I managed
+to do within the first `printf`. that way we can write to them in later `printf`s to get rip control.
 ```py
 p.sendlineafter(b"shot:", b"%88c%22$hhn%4c%32$hhn|%228$p|")
 ```
 this allows us to get a libc leak as well, which will be important for later.
+
 as already said, the next step is to overwrite the saved return address. interestingly enough,
 there is a `rwx` memory mapping at `0x800000000` in the address space of the java program.
+
 it isn't affected by aslr, plus there are some pointers to it on the stack. so I figured it'd
 be a nice target to overwrite rip with. the following line writes `0x800000000` into saved rip:
 ```py
@@ -81,6 +83,7 @@ p.sendlineafter(b"shot:", b"%28$n%8c%32$n")
 ```
 again, a perfect fit! we still got a last write tho, so now is the time to write the shellcode.
 the address `0x800000000` is on the stack (because we wrote it before), as well as `0x800000002`.
+
 so we can write two bytes (or three into the second one) into each address to get 4 to 5 bytes of shellcode.
 the following 5-byte shellcode seems to do the job:
 ```
@@ -91,6 +94,8 @@ ret
 ```
 -   `rdi` will contain `0`, which is the `fd` for `read` syscall
 -   `rdx` will contain a large value, allowing us to read many bytes of data
+
+
 to our luck, `rax` is `0` (syscall number for `read`), and `rsi` points to the stack before saved rip!
 after writing the shellcode, it is immedeately executed and we can read a bunch of data and overwrite ret.
 using the libc leak we got in the first step, we can call `system("/bin/sh")`:
