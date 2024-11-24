@@ -6,8 +6,15 @@
     <description>Recent content on BitFriends&#39; blog</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Mon, 21 Oct 2024 10:02:00 +0200</lastBuildDate>
+    <lastBuildDate>Sun, 24 Nov 2024 14:53:47 +0100</lastBuildDate>
     <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>TOY/2 - SECCON CTF 13</title>
+      <link>http://localhost:1313/posts/seccon_toy2/</link>
+      <pubDate>Sun, 24 Nov 2024 14:53:47 +0100</pubDate>
+      <guid>http://localhost:1313/posts/seccon_toy2/</guid>
+      <description>&lt;h2 id=&#34;toy2&#34;&gt;&lt;strong&gt;TOY/2:&lt;/strong&gt;&lt;/h2&gt;&#xA;&lt;p&gt;this weekend we played as P1G SEKAI and managed to qualify to the finals. TOY/2 was a challenge I solved&#xA;in this challenge we’re given a C++ binary that emulates some 16-bit architecture.&lt;/p&gt;&#xA;&lt;p&gt;it had several instructions, one of them included an oob bug:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;case&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;13&lt;/span&gt;&lt;span style=&#34;color:#f92672&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#75715e&#34;&gt;/* STT */&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    mem_write(_regs.a &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt; (size() &lt;span style=&#34;color:#f92672&#34;&gt;-&lt;/span&gt; &lt;span style=&#34;color:#ae81ff&#34;&gt;1&lt;/span&gt;), _regs.t);&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#66d9ef&#34;&gt;break&lt;/span&gt;;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pr</description>
+    </item>
     <item>
       <title>Java? - Securinets CTF Quals 2024</title>
       <link>http://localhost:1313/posts/securinets_java/</link>
