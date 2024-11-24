@@ -6,7 +6,8 @@ draft = false
 
 ## **TOY/2:**
 
-this weekend we played as P1G SEKAI and managed to qualify to the finals. TOY/2 was a challenge I solved
+this weekend we played as P1G SEKAI and managed to qualify to the finals. TOY/2 was a challenge I solved.
+
 in this challenge we’re given a C++ binary that emulates some 16-bit architecture.
 
 it had several instructions, one of them included an oob bug:
