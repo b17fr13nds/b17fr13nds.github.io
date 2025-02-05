@@ -124,6 +124,7 @@ corrupt this pointer to get rip control, plus identify the exact struct `file` w
     }
 ```
 (we achieve this by checking if file permissions have been altered)
+
 I could sucessfully identify the uaf'ed `file` struct and even overlap with user data:
 ```
 /tmp $ /exp/exp 
@@ -150,13 +151,16 @@ write: Bad file descriptor
 [    4.365244] CR2: 0000000000712334 CR3: 000000000db0e000 CR4: 00000000003006e0
 ```
 now we theoretically have rip control, but we're missing kernel heap and `text` leaks. this
-was the point where I scrapped the idea of getting rip control with `f_op`. however then I found
-out about a [blogpost](https://ptr-yudai.hatenablog.com/entry/2023/12/08/093606#Dirty-Pagetable) from ptr-yudai. basically we are elevating our `file` uaf to a pagetable
-uaf to create overlapping pages. also there comes `/dev/dma_heap` into play, which helps us
-to get a physical kernel address r/w. as soon as we achieve this, we can just write our shellcode
-to a kernel function. in my exploit, I chose `setresuid` to overwrite. in our shellcode we need
-to get root as well as escaping the nsjail. this worked flawlessly thanks to the inspiration
-from ptr-yudai. we get the flag and win:
+was the point where I scrapped the idea of getting rip control with `f_op`.
+
+however then I found out about a [blogpost](https://ptr-yudai.hatenablog.com/entry/2023/12/08/093606#Dirty-Pagetable) from ptr-yudai. basically we are elevating our
+`file` uaf to a pagetable uaf to create overlapping pages. also there comes `/dev/dma_heap`
+into play, which helps us to get a physical kernel address r/w. as soon as we achieve this,
+we can just write our shellcode to a kernel function.
+
+in my exploit, I chose `setresuid` to overwrite. in our shellcode we need to get root as well 
+as escaping the nsjail. this worked flawlessly thanks to the inspiration from ptr-yudai.
+we get the flag and win:
 ```
 /tmp $ /exp/exp 
 [*] device fd: 3

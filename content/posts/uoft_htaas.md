@@ -5,7 +5,7 @@ draft = false
 +++
 
 while playing UofTCTF I solved hash table as a service (htaas).
-we were given a simple heap menu, which lets us create, get and set hash table entries
+we were given a simple heap menu, which lets us create, get and set hash table entries:
 ```
 1. New Hash Table
 2. Set
