@@ -10,6 +10,22 @@
 		
 		
 		
+			<lastBuildDate>Fri, 03 Jul 2026 23:22:28 +0700</lastBuildDate>
+		
 			<atom:link href="http://localhost:1313/authors/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>Bitfriends</title>
+				<link>http://localhost:1313/authors/bitfriends/</link>
+				<pubDate>Fri, 03 Jul 2026 23:22:28 +0700</pubDate>
+				<guid>http://localhost:1313/authors/bitfriends/</guid>
+				<description></description>
+			</item>
+			<item>
+				<title>Leo_something</title>
+				<link>http://localhost:1313/authors/leo_something/</link>
+				<pubDate>Fri, 03 Jul 2026 23:22:28 +0700</pubDate>
+				<guid>http://localhost:1313/authors/leo_something/</guid>
+				<description></description>
+			</item>
 	</channel>
 </rss>

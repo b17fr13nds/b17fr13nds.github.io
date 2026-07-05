@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Glibc on bitfriends&#39; blog</title>
+		<link>http://localhost:1313/tags/glibc/</link>
+		<description>Recent content in Glibc on bitfriends&#39; blog</description>
+		<generator>Hugo</generator>
+		<language>en</language>
+		
+		
+		
+		
+			<lastBuildDate>Fri, 18 Oct 2024 18:50:53 +0200</lastBuildDate>
+		
+			<atom:link href="http://localhost:1313/tags/glibc/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>chains - BRICS CTF 2024</title>
+				<link>http://localhost:1313/posts/brics_chains/</link>
+				<pubDate>Fri, 18 Oct 2024 18:50:53 +0200</pubDate>
+				<guid>http://localhost:1313/posts/brics_chains/</guid>
+				<description>&lt;p&gt;Two weeks ago, I played BRICS CTF with r3kapig, and we ranked 1st!&#xA;Chains was one of the challanges I solved.&lt;/p&gt;&#xA;&lt;p&gt;We were given a program to add/remove proxies and chains. Upon executing we&amp;rsquo;re presented with:&lt;/p&gt;&#xA;&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;1. Add Proxy&#xA;2. Delete Proxy&#xA;3. Add Chain&#xA;4. View Chain&#xA;5. Delete Chain&#xA;6. Exit&#xA;&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;That resembles a typical heap challenge. It turns out to be one,&#xA;since the following structures are getting allocated dynamically:&lt;/p&gt;</description>
+			</item>
+			<item>
+				<title>Software and hardware fundamentals</title>
+				<link>http://localhost:1313/posts/fundamentals/</link>
+				<pubDate>Tue, 01 Mar 2022 12:35:03 +0200</pubDate>
+				<guid>http://localhost:1313/posts/fundamentals/</guid>
+				<description>&lt;p&gt;&lt;em&gt;Note that this is only an early reference that I initially created for mysELF. I decided to publish it for those, who want to have an overview of the fundamentals. If you spot any mistakes or if you think something should be added, please reach me on Discord (&lt;code&gt;bitfriends&lt;/code&gt;). I used some pictures from other people because this was only a reference for me. The people who created the pictures are amazing and should feel honored :)&lt;/em&gt;&lt;/p&gt;</description>
+			</item>
+	</channel>
+</rss>

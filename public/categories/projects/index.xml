@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Projects on bitfriends&#39; blog</title>
+		<link>http://localhost:1313/categories/projects/</link>
+		<description>Recent content in Projects on bitfriends&#39; blog</description>
+		<generator>Hugo</generator>
+		<language>en</language>
+		
+		
+		
+		
+			<lastBuildDate>Fri, 03 Jul 2026 23:22:28 +0700</lastBuildDate>
+		
+			<atom:link href="http://localhost:1313/categories/projects/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>Reviving modprobe_path technique (again)</title>
+				<link>http://localhost:1313/posts/reviving_modprobe/</link>
+				<pubDate>Fri, 03 Jul 2026 23:22:28 +0700</pubDate>
+				<guid>http://localhost:1313/posts/reviving_modprobe/</guid>
+				<description>&lt;h1 id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#overview&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h1&gt;&#xA;&lt;p&gt;The &lt;code&gt;modprobe_path&lt;/code&gt; technique is a widely known Linux kernel exploitation primitive that can be used to turn an arbitrary write primitive into LPE.&lt;/p&gt;&#xA;&lt;h3 id=&#34;tldr&#34;&gt;&#xA;  TL;DR&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#tldr&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h3&gt;&#xA;&lt;p&gt;&lt;code&gt;modprobe_path&lt;/code&gt; is a string that specifies the name of the modprobe executable in the Linux kernel. This program is responsible for adding and removing loadable kernel modules.&lt;/p&gt;&#xA;&lt;p&gt;When &lt;code&gt;CONFIG_STATIC_USERMODEHELPER&lt;/code&gt; is disabled &lt;code&gt;modprobe_path&lt;/code&gt;is R/W, this means that if we have an arbitrary write primitive and a KASLR leak, we can change it to a controlled executable file path.&#xA;If we now find a way to make the kernel run modprobe for us, it will run our executable with root privileges, thus achieving LPE.&lt;/p&gt;</description>
+			</item>
+			<item>
+				<title>My own kernel fuzzer - lxfuzz</title>
+				<link>http://localhost:1313/posts/kernel_fuzzer_lxfuzz/</link>
+				<pubDate>Sat, 07 Sep 2024 18:11:00 +0200</pubDate>
+				<guid>http://localhost:1313/posts/kernel_fuzzer_lxfuzz/</guid>
+				<description>&lt;p&gt;My long-term project is writing a kernel fuzzer named lxfuzz. It is a coverage-guided fuzzer for the linux kernel. I chose that project for some reasons:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;To learn about fuzzing, its mechanisms etc. in general&lt;/li&gt;&#xA;&lt;li&gt;To learn more about the linux kernel, especially&lt;/li&gt;&#xA;&lt;li&gt;To improve my C++ skills :) (the language used for lxfuzz)&lt;/li&gt;&#xA;&lt;li&gt;Profit (finding CVEs)&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;Under the hood it&amp;rsquo;s using qemu to run the kernel and KCOV for coverage collection.&#xA;The project is still work-in-progress and developed gradually.&#xA;Current features are:&lt;/p&gt;</description>
+			</item>
+			<item>
+				<title>Exploiting the kernel - CVE-2022-24122</title>
+				<link>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</link>
+				<pubDate>Sun, 12 Mar 2023 17:47:13 +0200</pubDate>
+				<guid>http://localhost:1313/posts/kernel_exploit_cve-2022-24122/</guid>
+				<description>&lt;p&gt;For the first time I exploited the kernel in real life.&#xA;I used the bug &lt;a href=&#34;https://www.cvedetails.com/cve/CVE-2022-24122/&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;CVE-2022-24122&lt;/a&gt;, which allowed a use-after-free due to bad use of &lt;code&gt;refcount&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;The exploit itself requires a KASLR leak to prevent an oops during the process,&#xA;as well as access to user namespaces. It is not really reliable, needs many tries :D&lt;/p&gt;&#xA;&lt;p&gt;To get root I corrupted the SLUB freelist and wrote to &lt;code&gt;modprobe_path&lt;/code&gt;.&lt;/p&gt;&#xA;&lt;p&gt;The exploit code can be found on &lt;a href=&#34;https://github.com/b17fr13nds/kernel-exploits/tree/main/CVE-2022-24122&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;GitHub&lt;/a&gt; or in the following:&lt;/p&gt;</description>
+			</item>
+			<item>
+				<title>Jailbreaking iOS 9.3.5 - CVE-2016-4669</title>
+				<link>http://localhost:1313/posts/ios_935_jb/</link>
+				<pubDate>Tue, 01 Mar 2022 14:02:26 +0200</pubDate>
+				<guid>http://localhost:1313/posts/ios_935_jb/</guid>
+				<description>&lt;p&gt;&lt;em&gt;In this article, I&amp;rsquo;ll present a detailed iOS jailbreak writeup and some basic tips and tricks on how to set up an environment for exploiting. The bug I am exploiting is in the iOS kernel. I hope this is a helpful reference for anyone who wants to start with iOS pwn&lt;/em&gt;&lt;/p&gt;&#xA;&lt;h5 id=&#34;now-let-us-begin&#34;&gt;&#xA;  Now let us begin!&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#now-let-us-begin&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h5&gt;&#xA;&lt;p&gt;Short story:&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;A few weeks ago, I found an old iPad 3,1 by my dad. I wanted to set it up for homeschooling for my sister, but the iOS version was so old, that I was unable to download anything from the AppStore. So I decided to jailbreak it to make it somewhat usable again. However, I didn&amp;rsquo;t use my own jailbreak at first. I used the Phoenix jailbreak from &lt;a href=&#34;https://phoenixpwn.com/&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://phoenixpwn.com/&lt;/a&gt;, which worked like a charm. Now I can install some packages and tweaks to be able to download older app versions from the App Store. But I wasn&amp;rsquo;t satisfied. In fact, I used an exploit that other people wrote and I didn&amp;rsquo;t know exactly what it was doing. That&amp;rsquo;s why I decided to do some research, to understand how the Phoenix jailbreak worked and maybe write a jailbreak or at least a demo by ourselves.&lt;/p&gt;</description>
+			</item>
+	</channel>
+</rss>

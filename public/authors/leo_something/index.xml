@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Leo_something on bitfriends&#39; blog</title>
+		<link>http://localhost:1313/authors/leo_something/</link>
+		<description>Recent content in Leo_something on bitfriends&#39; blog</description>
+		<generator>Hugo</generator>
+		<language>en</language>
+		
+		
+		
+		
+			<lastBuildDate>Fri, 03 Jul 2026 23:22:28 +0700</lastBuildDate>
+		
+			<atom:link href="http://localhost:1313/authors/leo_something/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>Reviving modprobe_path technique (again)</title>
+				<link>http://localhost:1313/posts/reviving_modprobe/</link>
+				<pubDate>Fri, 03 Jul 2026 23:22:28 +0700</pubDate>
+				<guid>http://localhost:1313/posts/reviving_modprobe/</guid>
+				<description>&lt;h1 id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#overview&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h1&gt;&#xA;&lt;p&gt;The &lt;code&gt;modprobe_path&lt;/code&gt; technique is a widely known Linux kernel exploitation primitive that can be used to turn an arbitrary write primitive into LPE.&lt;/p&gt;&#xA;&lt;h3 id=&#34;tldr&#34;&gt;&#xA;  TL;DR&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#tldr&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h3&gt;&#xA;&lt;p&gt;&lt;code&gt;modprobe_path&lt;/code&gt; is a string that specifies the name of the modprobe executable in the Linux kernel. This program is responsible for adding and removing loadable kernel modules.&lt;/p&gt;&#xA;&lt;p&gt;When &lt;code&gt;CONFIG_STATIC_USERMODEHELPER&lt;/code&gt; is disabled &lt;code&gt;modprobe_path&lt;/code&gt;is R/W, this means that if we have an arbitrary write primitive and a KASLR leak, we can change it to a controlled executable file path.&#xA;If we now find a way to make the kernel run modprobe for us, it will run our executable with root privileges, thus achieving LPE.&lt;/p&gt;</description>
+			</item>
+			<item>
+				<title>snalloc - Lake CTF 2025</title>
+				<link>http://localhost:1313/posts/lake_snalloc/lake_snalloc/</link>
+				<pubDate>Sun, 01 Mar 2026 23:49:32 +0700</pubDate>
+				<guid>http://localhost:1313/posts/lake_snalloc/lake_snalloc/</guid>
+				<description>&lt;h2 id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#overview&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;This was an heap challenge with a custom allocator implementation.&#xA;The main program basically let you allocate, edit and free chunks using either the custom allocator or the malloc allocator.&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;vulnerability&#34;&gt;&#xA;  Vulnerability&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#vulnerability&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;h3 id=&#34;snalloc-internals&#34;&gt;&#xA;  Snalloc Internals&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#snalloc-internals&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h3&gt;&#xA;&lt;p&gt;In the snallloc implementation, glibc malloc is still used as the &amp;ldquo;buddy&amp;rdquo; allocator. It is exclusively used to request blocks of memory that are multiple of &lt;code&gt;PAGESIZE&lt;/code&gt; in size.&lt;/p&gt;</description>
+			</item>
+			<item>
+				<title>cherry - Mimic Defense CTF</title>
+				<link>http://localhost:1313/posts/mimic_cherry/</link>
+				<pubDate>Fri, 12 Dec 2025 23:31:15 +0700</pubDate>
+				<guid>http://localhost:1313/posts/mimic_cherry/</guid>
+				<description>&lt;h2 id=&#34;cherry---mimic-ctf-finals-2025&#34;&gt;&#xA;  Cherry - Mimic CTF Finals 2025&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#cherry---mimic-ctf-finals-2025&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;Two weeks ago I went to Nanjing, China to take part in the &lt;a href=&#34;https://ctftime.org/event/2999&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;2025 Qiangwang Challenge on Cyber Mimic Defense Finals&lt;/a&gt; with the ARESx team. Me and &lt;a href=&#34;[https://leo1.cc/]%28https://leo1.cc/&#34; title=&#34;https://leo1.cc/&#34; &gt;@leo_something&lt;/a&gt;) full cleared pwn during the CTF and in this writeup we are going to talk about a really nice browser challenge we encountered.&lt;/p&gt;&#xA;&lt;h2 id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#overview&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;The challenge consisted in a patched version of &lt;a href=&#34;https://github.com/jerryscript-project/jerryscript&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;jerryscript&lt;/a&gt;, a &amp;ldquo;lightweight JavaScript engine intended to run on a very constrained devices such as microcontrollers&amp;rdquo;.&lt;/p&gt;</description>
+			</item>
+	</channel>
+</rss>

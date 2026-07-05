@@ -20,8 +20,7 @@ style = "github-dark"
   info = "Vulnerability Reseacher, CTF Player and Hacker"
   description = "personal blog for various projects"
   keywords = "blog,reseacher,personal"
-  avatarurl = "images/avatar.jpg"
-  #gravatar = "john.doe@example.com"
+  avatarurl = "images/avatar.png"
 
   faviconSVG = "/img/favicon.svg"
   favicon_32 = "/img/favicon-32x32.png"
@@ -69,4 +68,4 @@ style = "github-dark"
 [[menu.main]]
   name = "About"
   weight = 2
-  url = "about/"
+  url = "posts/about/"

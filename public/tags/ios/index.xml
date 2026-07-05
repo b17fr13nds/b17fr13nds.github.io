@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Ios on bitfriends&#39; blog</title>
+		<link>http://localhost:1313/tags/ios/</link>
+		<description>Recent content in Ios on bitfriends&#39; blog</description>
+		<generator>Hugo</generator>
+		<language>en</language>
+		
+		
+		
+		
+			<lastBuildDate>Tue, 01 Mar 2022 14:02:26 +0200</lastBuildDate>
+		
+			<atom:link href="http://localhost:1313/tags/ios/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>Jailbreaking iOS 9.3.5 - CVE-2016-4669</title>
+				<link>http://localhost:1313/posts/ios_935_jb/</link>
+				<pubDate>Tue, 01 Mar 2022 14:02:26 +0200</pubDate>
+				<guid>http://localhost:1313/posts/ios_935_jb/</guid>
+				<description>&lt;p&gt;&lt;em&gt;In this article, I&amp;rsquo;ll present a detailed iOS jailbreak writeup and some basic tips and tricks on how to set up an environment for exploiting. The bug I am exploiting is in the iOS kernel. I hope this is a helpful reference for anyone who wants to start with iOS pwn&lt;/em&gt;&lt;/p&gt;&#xA;&lt;h5 id=&#34;now-let-us-begin&#34;&gt;&#xA;  Now let us begin!&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#now-let-us-begin&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h5&gt;&#xA;&lt;p&gt;Short story:&lt;/p&gt;&#xA;&lt;blockquote&gt;&#xA;&lt;p&gt;A few weeks ago, I found an old iPad 3,1 by my dad. I wanted to set it up for homeschooling for my sister, but the iOS version was so old, that I was unable to download anything from the AppStore. So I decided to jailbreak it to make it somewhat usable again. However, I didn&amp;rsquo;t use my own jailbreak at first. I used the Phoenix jailbreak from &lt;a href=&#34;https://phoenixpwn.com/&#34;  class=&#34;external-link&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;https://phoenixpwn.com/&lt;/a&gt;, which worked like a charm. Now I can install some packages and tweaks to be able to download older app versions from the App Store. But I wasn&amp;rsquo;t satisfied. In fact, I used an exploit that other people wrote and I didn&amp;rsquo;t know exactly what it was doing. That&amp;rsquo;s why I decided to do some research, to understand how the Phoenix jailbreak worked and maybe write a jailbreak or at least a demo by ourselves.&lt;/p&gt;</description>
+			</item>
+	</channel>
+</rss>

