@@ -10,3 +10,5 @@ categories = []
 externalLink = ""
 series = []
 +++
+
+Doing CTFs since 2020, day 1 pwner. Fuzzing and AI (buzzwords) coordinator. Travel and maths enjoyer. Occasional larper. Researching for fun and profit.
