@@ -22,7 +22,7 @@
 	<meta name="twitter:title" content="snalloc - Lake CTF 2025">
 	<meta name="twitter:description" content="Exploiting a custom allocator with massive feng shui leaklessly">
 
-<meta property="og:url" content="http://localhost:1313/posts/lake_snalloc/lake_snalloc/">
+<meta property="og:url" content="http://localhost:1313/posts/lake_snalloc/">
 	<meta property="og:site_name" content="bitfriends&#39; blog">
 	<meta property="og:title" content="snalloc - Lake CTF 2025">
 	<meta property="og:description" content="Exploiting a custom allocator with massive feng shui leaklessly">
@@ -38,7 +38,7 @@
 
 
 
-<link rel="canonical" href="http://localhost:1313/posts/lake_snalloc/lake_snalloc/">
+<link rel="canonical" href="http://localhost:1313/posts/lake_snalloc/">
 
 
 <link rel="preload" href="/fonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
@@ -142,7 +142,7 @@
       <header>
         <div class="post-title">
           <h1 class="title">
-            <a class="title-link" href="http://localhost:1313/posts/lake_snalloc/lake_snalloc/">
+            <a class="title-link" href="http://localhost:1313/posts/lake_snalloc/">
               snalloc - Lake CTF 2025
             </a>
           </h1>
@@ -162,7 +162,7 @@
           </div>
           <div class="authors">
   <i class="fa-solid fa-user" aria-hidden="true"></i>
-    <a href="/authors/bitfriends/">Bitfriends</a>
+    <a href="/authors/bitfriends/">BitFriends</a>
       <span class="separator">•</span>
     <a href="/authors/leo_something/">Leo_something</a></div>
 
@@ -342,11 +342,11 @@ What we did was the following:</p>
 </h3>
 <p>Knowing how to forge a metadata chunk we need to find a way of bypassing ASLR.
 Achieving this required some premeditation, you can&rsquo;t just try stuff out, otherwise you&rsquo;ll end up rewriting your exploit from scratch several times.
-The first step is to understand how snalloc allocations look like in memory. Also note that snabs of the same order are linked in a doubly-linked list.
-<!-- raw HTML omitted -->
-Padding chunks are there because <code>posix_memalign</code> page-aligns the chunk data (the actual data of the chunk, don&rsquo;t mistake it with user-data page), leaving the metadata of the chunk (<code>prev-size</code> and <code>size</code>) in the page before, this implies that the page before has only 0xff0 bytes available, which is not enough for a <code>posix_memalign</code> allocation.
-<!-- raw HTML omitted -->
-Here you can see <code>prev-size</code> and <code>size</code> highlighted in red.</p>
+The first step is to understand how snalloc allocations look like in memory. Also note that snabs of the same order are linked in a doubly-linked list.</p>
+<p><img src="./heap-setup.png" alt="heap setup"></p>
+<p>Padding chunks are there because <code>posix_memalign</code> page-aligns the chunk data (the actual data of the chunk, don&rsquo;t mistake it with user-data page), leaving the metadata of the chunk (<code>prev-size</code> and <code>size</code>) in the page before, this implies that the page before has only 0xff0 bytes available, which is not enough for a <code>posix_memalign</code> allocation.</p>
+<p><img src="./heap-setup-gdb.png" alt="gdb setup"></p>
+<p>Here you can see <code>prev-size</code> and <code>size</code> highlighted in red.</p>
 <h3 id="heap-shaping">
   Heap shaping
   <a class="heading-link" href="#heap-shaping">
@@ -356,12 +356,12 @@ Here you can see <code>prev-size</code> and <code>size</code> highlighted in red
 </h3>
 <p>With all of this knowledge we can finally design the heap feng shui.
 Our first goal was to get ASLR leaks and to do that we decided to target the doubly-linked list pointers.
-The layout we came up with was the following.
-<!-- raw HTML omitted -->
-The basic idea here is to create an order 3 snab that overlaps with an order 1 snab, then we can use the first one to partial override a next pointer in the second one (with 4 bits of bruteforce).
-We also carefully placed a free smallbin chunk and forged a snab metadata struct around it, using it&rsquo;s fd as a valid next pointer inside libc <code>main_arena</code>.
-<!-- raw HTML omitted -->
-We then partially overrode that pointer to link the stdout file (Note that <code>main_arena</code> is usually near <code>_IO_2_1_stdout_</code>, the latter can be reached with a 4 bit bruteforce).</p>
+The layout we came up with was the following.</p>
+<p><img src="./fake-snab-setup.png" alt="snab setup"></p>
+<p>The basic idea here is to create an order 3 snab that overlaps with an order 1 snab, then we can use the first one to partial override a next pointer in the second one (with 4 bits of bruteforce).
+We also carefully placed a free smallbin chunk and forged a snab metadata struct around it, using it&rsquo;s fd as a valid next pointer inside libc <code>main_arena</code>.</p>
+<p><img src="./fake-snab-setup-2.png" alt="snab2 setup"></p>
+<p>We then partially overrode that pointer to link the stdout file (Note that <code>main_arena</code> is usually near <code>_IO_2_1_stdout_</code>, the latter can be reached with a 4 bit bruteforce).</p>
 <p>At this point it&rsquo;s enough to fill the <code>snab-&gt;bitmap</code> of both the overlapped snab and the fake snab on the smallbin, to place the next order 1 allocation over the stdout file struct.</p>
 <p>With an allocation over stdout we simply used <a href="https://github.com/nobodyisnobody/docs/tree/main/using.stdout.as.a.read.primitive"  class="external-link" target="_blank" rel="noopener">this technique</a> to get libc and stack leaks by partially overriding the file struct.
 Finally we changed the smallbin pointer (<code>snab-&gt;next</code>) to allocate a chunk on the stack frame of <code>do_cmd()</code> and write a ret2libc payload to gain RCE.</p>
@@ -669,8 +669,8 @@ Finally we changed the smallbin pointer (<code>snab-&gt;next</code>) to allocate
     <span class="sr-only">Link to heading</span>
   </a>
 </h4>
-<p>This archaeological finding is what we used to communicate during the CTF at 5 am lmao
-<!-- raw HTML omitted --></p>
+<p>This archaeological finding is what we used to communicate during the CTF at 5 am lmao</p>
+<p><img src="./feng_shui.jpg" alt="heap setup"></p>
 
       </div>
 

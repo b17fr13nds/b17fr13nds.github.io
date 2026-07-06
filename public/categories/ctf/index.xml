@@ -22,9 +22,9 @@
 			</item>
 			<item>
 				<title>snalloc - Lake CTF 2025</title>
-				<link>http://localhost:1313/posts/lake_snalloc/lake_snalloc/</link>
+				<link>http://localhost:1313/posts/lake_snalloc/</link>
 				<pubDate>Sun, 01 Mar 2026 23:49:32 +0700</pubDate>
-				<guid>http://localhost:1313/posts/lake_snalloc/lake_snalloc/</guid>
+				<guid>http://localhost:1313/posts/lake_snalloc/</guid>
 				<description>&lt;h2 id=&#34;overview&#34;&gt;&#xA;  Overview&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#overview&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;p&gt;This was an heap challenge with a custom allocator implementation.&#xA;The main program basically let you allocate, edit and free chunks using either the custom allocator or the malloc allocator.&lt;/p&gt;&#xA;&lt;hr&gt;&#xA;&lt;h2 id=&#34;vulnerability&#34;&gt;&#xA;  Vulnerability&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#vulnerability&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h2&gt;&#xA;&lt;h3 id=&#34;snalloc-internals&#34;&gt;&#xA;  Snalloc Internals&#xA;  &lt;a class=&#34;heading-link&#34; href=&#34;#snalloc-internals&#34;&gt;&#xA;    &lt;i class=&#34;fa-solid fa-link&#34; aria-hidden=&#34;true&#34; title=&#34;Link to heading&#34;&gt;&lt;/i&gt;&#xA;    &lt;span class=&#34;sr-only&#34;&gt;Link to heading&lt;/span&gt;&#xA;  &lt;/a&gt;&#xA;&lt;/h3&gt;&#xA;&lt;p&gt;In the snallloc implementation, glibc malloc is still used as the &amp;ldquo;buddy&amp;rdquo; allocator. It is exclusively used to request blocks of memory that are multiple of &lt;code&gt;PAGESIZE&lt;/code&gt; in size.&lt;/p&gt;</description>
 			</item>
 			<item>

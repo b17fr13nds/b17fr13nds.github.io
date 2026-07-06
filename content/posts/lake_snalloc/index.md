@@ -108,18 +108,34 @@ What we did was the following:
 Knowing how to forge a metadata chunk we need to find a way of bypassing ASLR.
 Achieving this required some premeditation, you can't just try stuff out, otherwise you'll end up rewriting your exploit from scratch several times.
 The first step is to understand how snalloc allocations look like in memory. Also note that snabs of the same order are linked in a doubly-linked list.
+
+
 ![heap setup](./heap-setup.png)
+
+
 Padding chunks are there because `posix_memalign` page-aligns the chunk data (the actual data of the chunk, don't mistake it with user-data page), leaving the metadata of the chunk (`prev-size` and `size`) in the page before, this implies that the page before has only 0xff0 bytes available, which is not enough for a `posix_memalign` allocation.
+
+
 ![gdb setup](./heap-setup-gdb.png)
+
+
 Here you can see `prev-size` and `size` highlighted in red.
 ### Heap shaping
 With all of this knowledge we can finally design the heap feng shui.
 Our first goal was to get ASLR leaks and to do that we decided to target the doubly-linked list pointers.
 The layout we came up with was the following.
+
+
 ![snab setup](./fake-snab-setup.png)
+
+
 The basic idea here is to create an order 3 snab that overlaps with an order 1 snab, then we can use the first one to partial override a next pointer in the second one (with 4 bits of bruteforce).
 We also carefully placed a free smallbin chunk and forged a snab metadata struct around it, using it's fd as a valid next pointer inside libc `main_arena`. 
+
+
 ![snab2 setup](./fake-snab-setup-2.png)
+
+
 We then partially overrode that pointer to link the stdout file (Note that `main_arena` is usually near `_IO_2_1_stdout_`, the latter can be reached with a 4 bit bruteforce).
 
 At this point it's enough to fill the `snab->bitmap` of both the overlapped snab and the fake snab on the smallbin, to place the next order 1 allocation over the stdout file struct.
@@ -416,4 +432,6 @@ if __name__ == "__main__":
 
 #### Something something heap feng shui
 This archaeological finding is what we used to communicate during the CTF at 5 am lmao
+
+
 ![heap setup](./feng_shui.jpg)
